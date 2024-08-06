@@ -64,7 +64,7 @@ contract BSM is ERC20, Ownable(msg.sender) {
         return balances[addr];
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
 
