@@ -3,11 +3,10 @@
 pragma solidity >= 0.8.2 < 0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+  
 contract BSM is ERC20, Ownable(msg.sender) {
-    // '0xdAC17F958D2ee523a2206206994597C13D831ec7' // 1) usdt 불러오기. 
     IERC20 public usdtToken; // USDT token contract
 
     uint public constant BISTRO_DECIMALS = 10 ** 18;
@@ -27,12 +26,21 @@ contract BSM is ERC20, Ownable(msg.sender) {
     mapping(address => uint) private balances;
 
     mapping(address => uint) private _released;
+
+    uint256 public privateSaleAmount;
+
+    uint public privateSalesStart;
+    uint public privateSalesRelease;
+    mapping(address => uint256) private privateSaleBalances;
+    uint private privateSalesStartTime;
+
+    // 여기까지 .
     address[] beneficiaries;
-    
-    constructor(uint _presaleOn) ERC20("Bistro", "BSM") {
-        _mint(address(this), _initialSupply);
-        preSaleCap = _initialSupply;
-        presaleOn = _presaleOn;
+
+    constructor(uint _privateSalesStart) ERC20("Bistro", "BSM") {
+        _mint(address(this), _initialSupply); // Mint initial supply to the contract itself
+        privateSaleAmount = _initialSupply; // All tokens are allocated for private sale initially
+        privateSalesStart = _privateSalesStart;
     }
     function setUSDTToken(address _usdtToken) external onlyOwner {
         usdtToken = IERC20(_usdtToken);
@@ -60,21 +68,30 @@ contract BSM is ERC20, Ownable(msg.sender) {
         _mint(to, amount);
     }
 
-    function release() external {
-            // 20 % -> 6개월 후, 30 % => 12개월 후 50% => 24개월 후
-            uint elapsedTime = block.timestamp - (presaleOn + 2 weeks);
-            require(elapsedTime >= 24 weeks, "Released after 6 months of private sales");
-            for (uint i = 0; i < beneficiaries.length; i++) {
-                address beneficiary = beneficiaries[i];
-                if (elapsedTime < FORTY_EIGHT_WEEKS) {
-                    payable(beneficiary).transfer(balances[beneficiary] / 5);
-                    balances[beneficiary] -= balances[beneficiary] / 5;
-                } else if (elapsedTime < NINETY_SIX_WEEKS) {
-                    payable(beneficiary).transfer(balances[beneficiary] / 2);
-                    balances[beneficiary] -= balances[beneficiary] / 2;
-                } else {
-                    payable(beneficiary).transfer(balances[beneficiary]);
-                }
-            }
+    function buyPrivateSale(address beneficiary, uint256 amount) external {
+        require(privateSaleAmount >= amount, "Not enough tokens for private sale");
+        require(privateSaleBalances[beneficiary] + amount <= preSalesLimitPerBeneficiary, "Private Sales Token amount cannot exceed 100000"); 
+        uint256 cost = (amount * PRICE_PER_TOKEN_PRESALE) / 10 ** 6; // Calculate the cost in USDT
+        require(usdtToken.transferFrom(msg.sender, address(this), cost), "USDT transfer failed");
+        privateSaleBalances[beneficiary] += amount;
+        privateSaleAmount -= amount;
     }
-} 
+
+    function release() external {
+        // 20 % -> 6개월 후, 30 % => 12개월 후 50% => 24개월 후
+        uint256 elapsedTime = block.timestamp - (privateSalesStartTime + 2 weeks);
+        require(elapsedTime >= 24 weeks, "Released after 6 months of private sales");
+        for (uint i = 0; i < beneficiaries.length; i++) {
+            address beneficiary = beneficiaries[i];
+            if (elapsedTime < FORTY_EIGHT_WEEKS) {
+                payable(beneficiary).transfer(privateSaleBalances[beneficiary] / 5); // 8 
+                privateSaleBalances[beneficiary] -= privateSaleBalances[beneficiary] / 5;
+            } else if (elapsedTime < NINETY_SIX_WEEKS) {
+                payable(beneficiary).transfer(privateSaleBalances[beneficiary] / 2); // 6 * 5 
+                privateSaleBalances[beneficiary] -= privateSaleBalances[beneficiary] / 5;
+            } else {
+                payable(beneficiary).transfer(privateSaleBalances[beneficiary]);
+            }
+        }
+    }
+}
