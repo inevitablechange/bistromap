@@ -46,6 +46,10 @@ contract BSM is ERC20, Ownable(msg.sender) {
         
     }
 
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+
     function release() external {
             // 20 % -> 6개월 후, 30 % => 12개월 후 50% => 24개월 후
             uint elapsedTime = block.timestamp - (presaleOn + 2 weeks);

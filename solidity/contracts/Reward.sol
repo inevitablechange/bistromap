@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/DateChecker.sol";
 
 contract Reward {
-    IERC20 public bistroToken;   
-
+    BSM public bistroToken;   
+    DateChecker dateChecker;
     struct Attendance { // 출석체크
         uint[] dates; // timestamp 의 어레이
         uint consecutive; // 연속 출석한 날짜. 연속 실패시 0으로 리셋
@@ -29,6 +29,7 @@ contract Reward {
     uint public constant BSM_DECIMALS = 10 ** 18; // 18 decimals for BSM
     uint public constant VOTE_COST = 3 * BSM_DECIMALS; // 투표 시 지급해야할 3 BSM
     uint public constant REWARDS_FOR = 5; // 상위 5개 리뷰를 작성한 리뷰어에게 보상 지급
+    uint lastReviewNumbers;
     uint reviewNumbers;
     uint lastRewardAt;
     uint rewardBalance;
@@ -42,60 +43,67 @@ contract Reward {
     receive() external payable {}
 
     // 내림차순 정렬 및 상위 5개 반환.
-    function sort(uint[] calldata arr) public pure returns(uint[] memory){
+    function sort(Review[] memory arr) public view returns(Review[] memory){
         if (arr.length == 0) {
            return arr;
         } else {
-            for (uint i = lastCalculatedSerialNumber; i < reviewNumbers; i++) {
+            for (uint i = lastReviewNumbers; i < reviewNumbers; i++) {
                 for (uint j = i + 1; j < arr.length; j++) {
                     if (arr[i].votes < arr[j].votes) {
                         (arr[i], arr[j]) = (arr[j], arr[i]);
                     }
                 }
             }
-            return arr.slice(0,5);
+            return arr;
         }
     }
 
     function reward() public {
         require(block.timestamp >= lastRewardAt + 4 weeks); // 마지막 집계 이후 4주가 지나야함
-        uint newReviewCount = reviewNumbers - lastCalculatedSerialNumber;
-        uint[] collectedReviews = uint[](newReviewCount);
+        uint newReviewCount = reviewNumbers - lastReviewNumbers;
+        Review[] memory collectedReviews = new Review[](newReviewCount);
         for (uint i = 0; i < newReviewCount; i++) {
-            reviews[lastCalculatedSerialNumber + i].expired = true;
-            collectedReviews[i] = reviews[lastCalculatedSerialNumber + i];
+            reviews[lastReviewNumbers + i].expired = true;
+            collectedReviews[i] = reviews[lastReviewNumbers + i];
         }
-        Reviews[] topReviews = sort(collectedReviews);
+        Review[] memory topReviews = sort(collectedReviews);
 
         uint votersToReward; // 보상을 받을 투표자의 수
         
         for (uint i = 0; i < topReviews.length; i++) {
-            bistroToken.mint(topReviews[i].writer, BSM_DECIMALS * 6000)
-            votersToReward += topReview[i].votedBy.length;
+            // bistroToken.mint(topReviews[i].writer, BSM_DECIMALS * 6000);
+            votersToReward += topReviews[i].votedBy.length;
         }
         uint rewardPerVoter = address(this).balance / votersToReward; // total / votersToReward 
         
         for (uint i = 0; i < topReviews.length; i++) { 
-            for (uint j = 0; j < topReview[i].votedBy.length; j++) {
-                payable(topReview[i].votedBy[j]).transfer(rewardPerVoter);
+            for (uint j = 0; j < topReviews[i].votedBy.length; j++) {
+                payable(topReviews[i].votedBy[j]).transfer(rewardPerVoter);
             }
         }
 
         lastRewardAt = block.timestamp;
-        lastCalculatedSerialNumber = reviewNumbers;
+        lastReviewNumbers = reviewNumbers;
     }
 
     function publish(string memory restaurant, uint longitude, uint latitude) public {
         // 1000자 이상, 사진은 추후 추가.
-        Review review = Review(msg.sender, reviewNumbers + 1, 0, block.timestamp, category, restaurant, longitude, latitude, false);
-        uint serialized = reviewNumbers++;
-        reviews[serialized] = review; // mapping
+        Review memory review;
+        review.writer = msg.sender;
+        review.serialNumber = reviewNumbers++;
+        review.publishedAt = block.timestamp;
+        review.restaurant = restaurant;
+        review.longitude = longitude;
+        review.latitude = latitude;
+        reviewNumbers += 1;
+
+        reviews[reviewNumbers] = review; // mapping
     }
     
     event Voted(address indexed user, uint256 reviewNumber);
 
     function vote(uint serialNumber) public {
-        Review rv = reviews[serialNumber];
+        Review memory rv = reviews[serialNumber];
         require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
         rv.votes++;
         reviews[serialNumber].votedBy.push(msg.sender);
@@ -108,12 +116,12 @@ contract Reward {
     event AttendanceMarked(address indexed user, uint256 timestamp);
 
     function markAttendance() public { // 고쳐야함.
-        uint[] calendar = userAttendance[msg.sender].dates;
-        require(!DateChecker.isToday(block.timestamp), "Today's attendance checked");
-        calendar.push(block.timestamp);
+        uint[] storage calendar = userAttendance[msg.sender].dates;
+        require(!dateChecker.isToday(block.timestamp), "Today's attendance checked");
+        userAttendance[msg.sender].dates.push(block.timestamp);
         if (calendar.length == 0) {
             calendar.push(block.timestamp);
-        } else if (DateChecker.isYesterday(calendar[calendar.length - 1])) { // 마지막 날짜가 오늘이면 안되고 반드시 어제어야 함
+        } else if (dateChecker.isYesterday(calendar[calendar.length - 1])) { // 마지막 날짜가 오늘이면 안되고 반드시 어제어야 함
             userAttendance[msg.sender].consecutive++;
         } else {
             userAttendance[msg.sender].consecutive = 0;
@@ -121,12 +129,12 @@ contract Reward {
         uint attendanceReward = BSM_DECIMALS / 10;
         if (userAttendance[msg.sender].consecutive == 28) {
             attendanceReward += BSM_DECIMALS;
-            userAttendance[msg.sender].consecutive = 0
+            userAttendance[msg.sender].consecutive = 0;
         } else if (userAttendance[msg.sender].consecutive == 7 || userAttendance[msg.sender].consecutive == 14 || userAttendance[msg.sender].consecutive == 21) {
             attendanceReward += BSM_DECIMALS * 3 / 10 ;
         }
 
         bistroToken.mint(msg.sender, attendanceReward);
-        emit AttendanceMarked(user, block.timestamp);
+        emit AttendanceMarked(msg.sender, block.timestamp);
     }
 }
