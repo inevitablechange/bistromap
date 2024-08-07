@@ -62,15 +62,14 @@ contract StakingContract {
     function claim() public {
         Stake storage userStake = stakes[msg.sender];
         require(userStake.amount > 0, "No stake found");
-
+        
         uint256 reward = calculateReward(msg.sender);
         require(reward > 0, "No reward to claim");
-
+        
         userStake.lastClaimTimestamp = block.timestamp;
-
-        // 직접 호출
+        
         BSMToken.mint(msg.sender, reward);
-
+        
         emit Claimed(msg.sender, reward);
     }
     
@@ -79,7 +78,7 @@ contract StakingContract {
         if (userStake.amount == 0) return 0;
 
         uint256 stakingDuration = block.timestamp - userStake.lastClaimTimestamp;
-        uint256 apy = FIXED_APY; // 고정 APY 12%
+        uint256 apy = calculateAPY(); // 연간 APY 비율, 예: 12%
 
         // APY를 연간 비율에서 초 단위 비율로 변환
         uint256 annualRewardRate = apy * 1e18; // 1e18을 곱하여 소수점 자릿수 맞춤
@@ -89,5 +88,18 @@ contract StakingContract {
         uint256 reward = (userStake.amount * annualRewardRate * stakingDuration) / (secondsPerYear * 1e18);
 
         return reward;
+    }
+
+
+    
+    function calculateAPY() public view returns (uint256) {
+        if (totalStaked == 0) return MAX_APY;
+        
+        uint256 apy = (MAX_APY * MINIMUM_STAKE) / totalStaked;
+        return apy > MAX_APY ? MAX_APY : apy;
+    }
+    
+    function canVote(address _user) external view returns (bool) {
+        return stakes[_user].amount >= MINIMUM_STAKE;
     }
 }
