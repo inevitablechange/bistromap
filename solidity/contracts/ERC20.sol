@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >= 0.8.2 < 0.9.0;
+pragma solidity >=0.8.2 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract BSM is ERC20, Ownable(msg.sender) {
     IERC20 public usdtToken; // USDT token contract
@@ -39,6 +40,7 @@ contract BSM is ERC20, Ownable(msg.sender) {
         _mint(address(this), _initialSupply); // Mint initial supply to the contract itself
         privateSaleAmount = _initialSupply; // All tokens are allocated for private sale initially
         privateSalesStart = _privateSalesStart;
+        usdtToken = IERC20(_usdtToken); // USDT 토큰 주소를 설정
     }
     function setUSDTToken(address _usdtToken) external onlyOwner {
         usdtToken = IERC20(_usdtToken);
@@ -65,7 +67,11 @@ contract BSM is ERC20, Ownable(msg.sender) {
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
-    
+
+    function setMinter(address minter, bool authorized) external onlyOwner {
+        authorizedMinters[minter] = authorized;
+    }
+
     function buyPrivateSale(address beneficiary, uint256 amount) external {
         require(privateSaleAmount >= amount, "Not enough tokens for private sale");
         require(privateSaleBalances[beneficiary] + amount <= preSalesLimitPerBeneficiary, "Private Sales Token amount cannot exceed 100000"); 
@@ -73,22 +79,29 @@ contract BSM is ERC20, Ownable(msg.sender) {
         require(usdtToken.transferFrom(msg.sender, address(this), cost), "USDT transfer failed");
         privateSaleBalances[beneficiary] += amount;
         privateSaleAmount -= amount;
+
+        // Start time for release calculation
+        if (privateSaleBalances[beneficiary] == amount) {
+            privateSalesStartTime = block.timestamp;
+            beneficiaries.push(beneficiary);
+        }
     }
-    
+
     function release() external {
-        // 20 % -> 6개월 후, 30 % => 12개월 후 50% => 24개월 후
-        uint256 elapsedTime = block.timestamp - (privateSalesStartTime + 2 weeks);
+        uint256 elapsedTime = block.timestamp - privateSalesStartTime;
         require(elapsedTime >= 24 weeks, "Released after 6 months of private sales");
+
         for (uint i = 0; i < beneficiaries.length; i++) {
             address beneficiary = beneficiaries[i];
             if (elapsedTime < FORTY_EIGHT_WEEKS) {
-                payable(beneficiary).transfer(privateSaleBalances[beneficiary] / 5); // 8 
+                payable(beneficiary).transfer(privateSaleBalances[beneficiary] / 5);
                 privateSaleBalances[beneficiary] -= privateSaleBalances[beneficiary] / 5;
             } else if (elapsedTime < NINETY_SIX_WEEKS) {
-                payable(beneficiary).transfer(privateSaleBalances[beneficiary] / 2); // 6 * 5 
-                privateSaleBalances[beneficiary] -= privateSaleBalances[beneficiary] / 5;
+                payable(beneficiary).transfer(privateSaleBalances[beneficiary] / 2);
+                privateSaleBalances[beneficiary] -= privateSaleBalances[beneficiary] / 2;
             } else {
                 payable(beneficiary).transfer(privateSaleBalances[beneficiary]);
+                privateSaleBalances[beneficiary] = 0;
             }
         }
     }

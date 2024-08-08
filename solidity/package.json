@@ -13,11 +13,14 @@
     "@openzeppelin/contracts": "^5.0.2",
     "dotenv": "^16.4.5",
     "hardhat": "^2.22.7",
+    "ethers": "^6.13.2",
     "ts-node": "^10.9.2",
     "web3": "^4.11.1"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@types/node": "^22.1.0"
+    "chai": "^4.3.7",
+    "ethers": "^6.6.0",
+    "hardhat": "^2.22.8"
   }
 }
