@@ -10,16 +10,17 @@ contract BSM is ERC20, Ownable(msg.sender) {
     // '0xdAC17F958D2ee523a2206206994597C13D831ec7' // 1) usdt 불러오기. 
     IERC20 public usdtToken; // USDT token contract
 
-    uint private constant _initialSupply = 2100000 * 10 ** 18; // 2.1 million tokens with 18 decimals
-    uint public constant PRICE_PER_TOKEN = 5 * 10 ** 4; // 0.1 USDT per BSM token 2)presale의 경우 좀 더 저렴하게
-    
+    uint public constant BISTRO_DECIMALS = 10 ** 18;
+    uint private constant _initialSupply = 2100000 * BISTRO_DECIMALS; // 2.1 million tokens with 18 decimals
     uint public constant TWENTY_FOUR_WEEKS = 24 weeks;
     uint public constant FORTY_EIGHT_WEEKS = 48 weeks;
     uint public constant NINETY_SIX_WEEKS = 96 weeks;
     uint public soldAmount;
 
-    uint public constant privateSalesLimitPerBeneficiary = 100000;
+    uint public constant preSalesLimitPerBeneficiary = 100000 * BISTRO_DECIMALS; // BISTRO_DECIMALS hal = 0.05 usdt( 10 ** 6)
     uint public preSaleCap; // 계정당 넣을 수 있는 최대 양
+    uint public constant PRICE_PER_TOKEN_PRESALE = 5  * 10 ** 4; // 100개를 산다고 했을떄, (100 * 5  * 10 ** 4)  Presale의 경우 1/2 저렴하게 판매 (presale price: 0.05 usdt)
+
     uint public presalePeriod = 2 weeks;
     uint private presaleOn;
     
@@ -33,17 +34,30 @@ contract BSM is ERC20, Ownable(msg.sender) {
         preSaleCap = _initialSupply;
         presaleOn = _presaleOn;
     }
+    function setUSDTToken(address _usdtToken) external onlyOwner {
+        usdtToken = IERC20(_usdtToken);
+    }
+    function buyPrivateSale(uint amount) external {
+        require(block.timestamp <= presaleOn + 2 weeks, "presale is over");
+        require(preSaleCap >= soldAmount + amount, string(abi.encodePacked("Only ", Strings.toString(preSaleCap - soldAmount), " BSM Available")));
+        require(balances[msg.sender] + amount <= preSalesLimitPerBeneficiary, "Pre-Sales Token amount cannot exceed 100000"); 
+        uint cost = (amount * PRICE_PER_TOKEN_PRESALE) / BISTRO_DECIMALS ; // Calculate the cost in USDT
+        require(usdtToken.balanceOf(msg.sender) >= cost, "need more USDT");
 
-    function buyPrivateSale(address beneficiary, uint amount) external {
-        require((soldAmount + amount) <= preSaleCap, string(abi.encodePacked("Only ", Strings.toString(preSaleCap - soldAmount), " BSM Available")));
-        require(preSaleCap >= amount, "Not enough tokens for private sale");
-        require(balances[beneficiary] + amount <= privateSalesLimitPerBeneficiary, "Private Sales Token amount cannot exceed 100000"); 
-        uint cost = (amount * PRICE_PER_TOKEN) / 10 ** 6; // Calculate the cost in USDT
-        require(usdtToken.transferFrom(msg.sender, address(this), cost), "USDT transfer failed");
-        balances[beneficiary] += amount;
-        preSaleCap -= amount;
+        require(usdtToken.transferFrom(msg.sender, address(this), cost), "failed transfer"); // usdtToken을 msg.sender -> contract로 보냄.
+        if(balances[msg.sender] == 0) {
+            beneficiaries.push(msg.sender);
+        }
+        balances[msg.sender] += amount;
         soldAmount += amount;
-        
+    }
+
+    function getBalance(address addr) public view returns(uint){
+        return balances[addr];
+    }
+
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
     }
 
     function release() external {
