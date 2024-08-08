@@ -23,16 +23,17 @@ contract Reward {
         bool expired; // 집계가 끝났는지 여부
     }
 
-    mapping(uint => Review) reviews; // ID로 리뷰 검색
-    mapping(address => Attendance) userAttendance; // address로 유저의 출석 검색
+    mapping(uint => Review) public reviews; // ID로 리뷰 검색
+    mapping(address => Attendance) public  userAttendance; // address로 유저의 출석 검색
     mapping(address => uint[]) userVotedFor;
     uint public constant BSM_DECIMALS = 10 ** 18; // 18 decimals for BSM
     uint public constant VOTE_COST = 3 * BSM_DECIMALS; // 투표 시 지급해야할 3 BSM
     uint public constant REWARDS_FOR = 5; // 상위 5개 리뷰를 작성한 리뷰어에게 보상 지급
-    uint lastReviewNumbers;
-    uint reviewNumbers;
-    uint lastRewardAt;
-    uint rewardBalance;
+    uint public lastReviewNumbers;
+    uint public reviewNumbers;
+    uint public lastRewardAt;
+
+    event Published(address indexed user, uint256 reviewNumber);
 
     constructor(address _bistroTokenAddress) {
         bistroToken = BSM(_bistroTokenAddress);
@@ -42,8 +43,9 @@ contract Reward {
     fallback() external {}
     receive() external payable {}
 
-    // 내림차순 정렬 및 상위 5개 반환.
+    // 내림차순 정렬 및 상위 5개 중 투표 10개 이상 받은 리뷰만 반환.
     function sort(Review[] memory arr) public view returns(Review[] memory){
+        uint minimumVotes = 10;
         if (arr.length == 0) {
            return arr;
         } else {
@@ -54,7 +56,20 @@ contract Reward {
                     }
                 }
             }
-            return arr;
+            // find index;]
+            uint leng;
+            for (uint i = 0; i < arr.length; i++) {
+                if (arr[i].votes >= minimumVotes) {
+                    leng++;
+                } else {
+                    break;
+                }
+            }
+            Review[] memory topReviews = new Review[](leng);
+            for (uint i = 0; i < leng; i++) {
+                topReviews[i] = arr[i];
+            }
+        return topReviews;
         }
     }
 
@@ -67,6 +82,7 @@ contract Reward {
             collectedReviews[i] = reviews[lastReviewNumbers + i];
         }
         Review[] memory topReviews = sort(collectedReviews);
+        require(topReviews.length > 0, "No reviews");
 
         uint votersToReward; // 보상을 받을 투표자의 수
         
@@ -88,24 +104,28 @@ contract Reward {
 
     function publish(string memory restaurant, uint longitude, uint latitude) public {
         // 1000자 이상, 사진은 추후 추가.
+        uint serialNumber = reviewNumbers + 1;
         Review memory review;
         review.writer = msg.sender;
-        review.serialNumber = reviewNumbers++;
+        review.serialNumber = serialNumber;
+        review.votes = 0;
         review.publishedAt = block.timestamp;
         review.restaurant = restaurant;
         review.longitude = longitude;
         review.latitude = latitude;
-        reviewNumbers += 1;
 
-        reviews[reviewNumbers] = review; // mapping
+        reviews[serialNumber] = review; // mapping
+
+        emit Published(msg.sender, reviewNumbers);
     }
     
     event Voted(address indexed user, uint256 reviewNumber);
 
-    function vote(uint serialNumber) public {
-        Review memory rv = reviews[serialNumber];
+    function vote(uint serialNumber) public { // staking 1000 bsm require 조건 필요
+        Review storage rv = reviews[serialNumber];
+        require(rv.writer != msg.sender, "Voter can't vote for the her or his review.");
         require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
-        rv.votes++;
+        rv.votes = rv.votes + 1;
         reviews[serialNumber].votedBy.push(msg.sender);
 
         emit Voted(msg.sender, serialNumber);
@@ -117,11 +137,11 @@ contract Reward {
 
     function markAttendance() public { // 고쳐야함.
         uint[] storage calendar = userAttendance[msg.sender].dates;
-        require(!dateChecker.isToday(block.timestamp), "Today's attendance checked");
+        require(dateChecker.isToday(block.timestamp) == false, "Today's attendance checked");
         userAttendance[msg.sender].dates.push(block.timestamp);
         if (calendar.length == 0) {
             calendar.push(block.timestamp);
-        } else if (dateChecker.isYesterday(calendar[calendar.length - 1])) { // 마지막 날짜가 오늘이면 안되고 반드시 어제어야 함
+        } else if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) { // 마지막 날짜가 오늘이면 안되고 반드시 어제어야 함
             userAttendance[msg.sender].consecutive++;
         } else {
             userAttendance[msg.sender].consecutive = 0;
