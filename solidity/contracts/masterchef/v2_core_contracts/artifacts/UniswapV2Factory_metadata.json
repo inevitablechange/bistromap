@@ -1,0 +1,305 @@
+{
+	"compiler": {
+		"version": "0.8.4+commit.c7e474f2"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_feeToSetter",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "token0",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "token1",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "pair",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "PairCreated",
+				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "PAIR_HASH",
+				"outputs": [
+					{
+						"internalType": "bytes32",
+						"name": "",
+						"type": "bytes32"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"name": "allPairs",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "allPairsLength",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenA",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenB",
+						"type": "address"
+					}
+				],
+				"name": "createPair",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "pair",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "feeTo",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "feeToSetter",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "getPair",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_feeTo",
+						"type": "address"
+					}
+				],
+				"name": "setFeeTo",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_feeToSetter",
+						"type": "address"
+					}
+				],
+				"name": "setFeeToSetter",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"BistroMap/v2_core_contracts/UniswapV2Factory.sol": "UniswapV2Factory"
+		},
+		"evmVersion": "istanbul",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"BistroMap/v2_core_contracts/UniswapV2ERC20.sol": {
+			"keccak256": "0x53f8ab84590dde670ad0bb201cfa8723f77298c3e01ac9f5fe5081dad67cbc2e",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://10c2780b89e90821d9d75311ee27f977562ad4dbcb1c25d6679c472cd9f2a777",
+				"dweb:/ipfs/QmbVa1aYMYhU5vUQ1wF44YTrhxJogUCHWTTqM6NG5ekFqE"
+			]
+		},
+		"BistroMap/v2_core_contracts/UniswapV2Factory.sol": {
+			"keccak256": "0xcf91b96558012e41dee8604407e955a5a12266f51cdab92c84005753506cb0e0",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://4451afc851354d403dff6fcca4486ce9310fb1d912df5ffd1f9146a2e974364e",
+				"dweb:/ipfs/QmUdRXQ5W9EPKM5J9mA5G2M9LaHXg6xHnAmhGbs6TojJNz"
+			]
+		},
+		"BistroMap/v2_core_contracts/UniswapV2Pair.sol": {
+			"keccak256": "0xeb21f8f921704c943cade09fbf83717dac1a3b99edc797b2b83fb9b40ff426b6",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://dc5c69b730f78ff476a9f2bf20a954003ee40a5586b52ca58d547429f8a14130",
+				"dweb:/ipfs/QmPG1FvQfEp1mJx3DvPG21yM25RxkddfsjMaQtgeuhmMUJ"
+			]
+		},
+		"BistroMap/v2_core_contracts/interfaces/IERC20.sol": {
+			"keccak256": "0x2a971d7e2bd5b2318f5d6b558ee400b33139d1bcd3227a7dab3f6576f223b002",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://32fce19a1b11f5ecafa913e10c5b2116e096deeba3942098195a115464f32f71",
+				"dweb:/ipfs/QmPpSoHBPr5upjUVjFaMLCVaniLu3pNAsb4qi2EEnrcidS"
+			]
+		},
+		"BistroMap/v2_core_contracts/interfaces/IUniswapV2Callee.sol": {
+			"keccak256": "0xdb79011198c448a944cfae85de3999d2b5e7ff72d61f56a2a54e28b631661045",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://4c46e6d2a1cfc1db410411257b1bb165d10adffecc1f7bdaff97be03c8356c9d",
+				"dweb:/ipfs/QmVWMcVBfTm4qnYkZq6U89yqYPSy4L47uqRhL78AKEf1LW"
+			]
+		},
+		"BistroMap/v2_core_contracts/interfaces/IUniswapV2ERC20.sol": {
+			"keccak256": "0x344397d1f5a454ac9aee54a31b959378802090c2c65c2355d338f0ae546fdbca",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://43ffa1482104cca7034dd6045dea48721a20f6a4103b2a15d55a0692246f5870",
+				"dweb:/ipfs/QmbjztK6HF4XSxS6B27TygrW9sTzdgnCHVZNXTrmtRdzoV"
+			]
+		},
+		"BistroMap/v2_core_contracts/interfaces/IUniswapV2Factory.sol": {
+			"keccak256": "0x4683f617dfe1cf378dd84f1fc779e4b2bb667876f1f0bdaf232050a3128a2236",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://0114225cd777502bfde38895f14fd876db4a31cffcc816d5f9a9fb42e318b242",
+				"dweb:/ipfs/QmXUeLmJF3UL6tz1cwM166rdGDeJwSsecojyGYq4uU4tUY"
+			]
+		},
+		"BistroMap/v2_core_contracts/interfaces/IUniswapV2Pair.sol": {
+			"keccak256": "0xcedef9cc480337fba270782127e7d9db965afadf2c57eab00e6ee2419a21aab0",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://93c80cde81a3a7b286b4f9759d1bf67511d76d63015f4e8fa3be1add4735bb24",
+				"dweb:/ipfs/QmddrpuvyHD9LY7nPijH8zy4vQEX9KLQgkW1RmiLRhdoVJ"
+			]
+		},
+		"BistroMap/v2_core_contracts/libraries/Math.sol": {
+			"keccak256": "0xb2b36e4dfa216d9cde5ccb3254142309bfc1d4a62b5a3c451285425328feeee5",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://2fc104d3dcf8c3948f2bf956510e1839428a0cbd5f09f29835894126f4f2bae0",
+				"dweb:/ipfs/QmVSCt7CeqVwRMB9A5f3Q9uPJkRU327fLYBAcL2DwL3sQ6"
+			]
+		},
+		"BistroMap/v2_core_contracts/libraries/UQ112x112.sol": {
+			"keccak256": "0x28e424830ffb94cf06afda4a821ae0509039d6efe972fea49d3eaa7a61cf07e5",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://c1b2cf1a4bd3974b4d92a6e35db4ee2f4d954d2ae1a61371b4ac54f2e77de5a2",
+				"dweb:/ipfs/QmSpwgpuzC6pBAM3Ew6fpdjZ4p6tiqBsa3nzfaYkG2eznP"
+			]
+		}
+	},
+	"version": 1
+}

@@ -1,0 +1,45 @@
+{
+	"compiler": {
+		"version": "0.8.26+commit.8a97fa7a"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"BistroMap/v2_core_contracts/libraries/TransferHelper.sol": "TransferHelper"
+		},
+		"evmVersion": "cancun",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"BistroMap/v2_core_contracts/libraries/TransferHelper.sol": {
+			"keccak256": "0xe1cc2e56a0237dca71058c90b0342001b03a6ca06280db82f5e4f74cf81808d3",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://85117e6de425f74ca482350849b5cb9f8a7d0f092c75e7684d24388c83b8f99b",
+				"dweb:/ipfs/QmR7qVbUmx1cd5vnoBbg2vZArgbwGeFF6aLUfZ73z2xi16"
+			]
+		}
+	},
+	"version": 1
+}
