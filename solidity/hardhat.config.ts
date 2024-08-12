@@ -1,13 +1,25 @@
-require("@nomicfoundation/hardhat-toolbox");
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-ethers";
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
-  solidity: "0.8.20",
-  networks: {
-    hardhat: {
-      mining: {
-        auto: false,
-        interval: 1000,
+
+const config: HardhatUserConfig = {
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 2000,
       },
     },
   },
+  // networks: {
+  //   hardhat: {
+  //       auto: false,
+  //       interval: 2000,
+  //     },
+  //   },
+  // },
 };
+
+export default config;

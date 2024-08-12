@@ -1,0 +1,74 @@
+{
+	"compiler": {
+		"version": "0.8.26+commit.8a97fa7a"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "sender",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount0",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount1",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes",
+						"name": "data",
+						"type": "bytes"
+					}
+				],
+				"name": "uniswapV2Call",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"BistroMap/v2_core_contracts/interfaces/IUniswapV2Callee.sol": "IUniswapV2Callee"
+		},
+		"evmVersion": "cancun",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"BistroMap/v2_core_contracts/interfaces/IUniswapV2Callee.sol": {
+			"keccak256": "0x7ee925793648aea24e5dc48807e0242ff0912987e7e03a30e832d35d4c7ef46f",
+			"license": "GPL-3.0-or-later",
+			"urls": [
+				"bzz-raw://2bd80f755c0f793d2139acfa2826599a5afbffe7505343ece02bc5903d178e82",
+				"dweb:/ipfs/QmNUNprmvtuW9LvbvTtRLSuf5jowqEF3gzHyNfSg6j5pkG"
+			]
+		}
+	},
+	"version": 1
+}
