@@ -8,7 +8,8 @@ contract StakingContract {
     
     uint256 public constant MINIMUM_STAKE = 1000 * 1e18; // 1000 BSM
     uint256 public constant MINIMUM_STAKE_PERIOD = 24 weeks;
-    uint256 public constant FIXED_APY = 12; // 12% 고정 APY
+    uint256 public constant FIXED_APR = 12; // 12% 고정 APR
+    uint256 public constant SECONDS_PER_YEAR = 365 * 24 * 60 * 60; // 1년 초
 
     struct Stake {
         uint256 amount;
@@ -30,14 +31,16 @@ contract StakingContract {
     function stake(uint256 _amount) external {
         require(_amount >= MINIMUM_STAKE, "Stake amount too low");
         require(BSMToken.transferFrom(msg.sender, address(this), _amount), "Transfer failed");
+
+        Stake storage userStake = stakes[msg.sender];
         
-        if (stakes[msg.sender].amount > 0) {
-            claim();
+        if (userStake.amount > 0) {
+            _claim(); // 기존 스테이크가 있으면 클레임합니다.
         }
         
-        stakes[msg.sender].amount += _amount;
-        stakes[msg.sender].timestamp = block.timestamp;
-        stakes[msg.sender].lastClaimTimestamp = block.timestamp;
+        userStake.amount += _amount;
+        userStake.timestamp = block.timestamp;
+        userStake.lastClaimTimestamp = block.timestamp;
         totalStaked += _amount;
         
         emit Staked(msg.sender, _amount);
@@ -47,19 +50,21 @@ contract StakingContract {
         Stake storage userStake = stakes[msg.sender];
         require(userStake.amount > 0, "No stake found");
         require(block.timestamp >= userStake.timestamp + MINIMUM_STAKE_PERIOD, "Minimum stake period not met");
-        
-        claim();
-        
+
+        uint256 reward = calculateReward(msg.sender);
         uint256 amount = userStake.amount;
         totalStaked -= amount;
         delete stakes[msg.sender];
-        
+
+        // 보상을 민트하고 스테이킹한 금액을 반환합니다.
+        BSMToken.mint(msg.sender, reward);
         require(BSMToken.transfer(msg.sender, amount), "Transfer failed");
-        
+
         emit Unstaked(msg.sender, amount);
+        emit Claimed(msg.sender, reward); // 클레임 이벤트
     }
     
-    function claim() public {
+    function _claim() internal {
         Stake storage userStake = stakes[msg.sender];
         require(userStake.amount > 0, "No stake found");
 
@@ -68,7 +73,6 @@ contract StakingContract {
 
         userStake.lastClaimTimestamp = block.timestamp;
 
-        // 직접 호출
         BSMToken.mint(msg.sender, reward);
 
         emit Claimed(msg.sender, reward);
@@ -79,14 +83,10 @@ contract StakingContract {
         if (userStake.amount == 0) return 0;
 
         uint256 stakingDuration = block.timestamp - userStake.lastClaimTimestamp;
-        uint256 apy = FIXED_APY; // 고정 APY 12%
+        uint256 apr = FIXED_APR; // 고정 APR 12%
 
-        // APY를 연간 비율에서 초 단위 비율로 변환
-        uint256 annualRewardRate = apy * 1e18; // 1e18을 곱하여 소수점 자릿수 맞춤
-        uint256 secondsPerYear = 365 days; // 초 단위 연간 기간
-
-        // 보상 계산
-        uint256 reward = (userStake.amount * annualRewardRate * stakingDuration) / (secondsPerYear * 1e18);
+        // APR을 연간 비율로 변환
+        uint256 reward = (userStake.amount * apr * stakingDuration) / (SECONDS_PER_YEAR * 100);
 
         return reward;
     }

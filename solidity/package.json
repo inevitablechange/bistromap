@@ -16,7 +16,6 @@
     "web3": "^4.11.1"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@types/node": "^22.1.0"
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0"
   }
 }
