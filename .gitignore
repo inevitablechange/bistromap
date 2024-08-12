@@ -42,7 +42,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# solidity
-artifacts
-cache
-.states
+#typechain
+/typechain
+/typechain-types
+
+#solidity-coverage files
+coverage
+coverage.json
+
+#Hardhat Ignition default folder for deployments against a local node
+ignition/deployments/chain-31337

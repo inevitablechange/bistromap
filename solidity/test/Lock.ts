@@ -5,12 +5,27 @@ import {
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { ethers, network } from "hardhat";
+import { ethers } from "hardhat";
+
+/* 
+주의점 1)
+블록에 트랜잭션이 담기고 다음 단계로 넘어가기 위해서는 wait() 함수를 활용해야 한다.
+wait을 쓰기 위해서는 await (await 함수명).wait() 형식으로 사용해야 한다. 
+
+주의점 2)
+유니스왑 Factory 컨트랙트 내 INIT_CODE_PAIR_HASH 트랜잭션에 따라 달라질 수 있다.
+변경이 필요할 경우, INIT_CODE_PAIR_HASH값을 참고해서 UniswapV2Library.sol > pairFor함수 내 hex값을 변경해야 한다.
+
+주의점 3)
+BSM Token의 소유권을 PoolRewards Contract에 넘겨야 Reward를 제공할 때 mint()함수를 사용할 수 있게 된다.
+*/
 
 describe("UNISWAP_Test1", function () {
   async function deployContractsFixture() {
     //automine - true 로 변경 후 실행
-    await network.provider.send("evm_setAutomine", [true]);
+    const provider = ethers.provider;
+    console.log(provider);
+    // await network.provider.send("evm_setAutomine", [true]);
 
     const [
       deployer,
@@ -83,7 +98,7 @@ describe("UNISWAP_Test1", function () {
 
       const bsmAmount: bigint = ethers.parseUnits("420", 18);
       const usdtAmount: bigint = ethers.parseUnits("4200", 18);
-      const deadline = (await time.latest()) + 15;
+      const deadline = (await time.latest()) + 300;
 
       await bsm.mint(deployer.address, bsmAmount);
       await usdt.mint(deployer.address, usdtAmount);
@@ -111,11 +126,154 @@ describe("UNISWAP_Test1", function () {
         .attach(pairAddress)
         .getReserves();
 
-      expect([reserve0, reserve1, blockTimestampLast]).to.deep.equal([
-        bsmAmount,
-        usdtAmount,
-        blockTimestampLast,
-      ]);
+      expect([
+        BigInt(reserve0),
+        BigInt(reserve1),
+        BigInt(blockTimestampLast),
+      ]).to.deep.equal([bsmAmount, usdtAmount, blockTimestampLast]);
+
+      //deploy Liquidity Pool LP Tokens Staking Reward Contract
+      const PoolRewards = await ethers.getContractFactory("PoolRewards");
+      const poolRewards = await PoolRewards.deploy(
+        pairAddress,
+        bsm.target,
+        BigInt(1000000000000000000)
+      );
+      await poolRewards.waitForDeployment();
+      console.log("LP Tokens Staking Reward Address: ", poolRewards.target);
+
+      //Approve LP tokens to Reward Contract
+
+      await uniswapPair
+        .attach(pairAddress)
+        .approve(poolRewards.target, bsmAmount);
+
+      //Give ownership of BSM token to Reward Contract (need to use mint function to give rewards)
+      await bsm.transferOwnership(poolRewards.target);
+
+      //Check balance of LP Tokens before Staking
+      const deployerLpTokens_before = await uniswapPair
+        .attach(pairAddress)
+        .balanceOf(deployer);
+
+      const totalLpTokens_before = await uniswapPair
+        .attach(pairAddress)
+        .totalSupply();
+      console.log(
+        "LP Tokens Before Staking(Balance of deployer, Total Supply): ",
+        deployerLpTokens_before,
+        totalLpTokens_before
+      );
+
+      //Stake 1/2 LP tokens(210000000000000000000) to Reward Contract
+      await poolRewards.deposit(BigInt(210000000000000000000));
+
+      //Check balance of LP Tokens before Staking
+      const deployerLpTokens_after = await uniswapPair
+        .attach(pairAddress)
+        .balanceOf(deployer);
+
+      const totalLpTokens_after = await uniswapPair
+        .attach(pairAddress)
+        .totalSupply();
+
+      console.log(
+        "LP Tokens After Staking(Balance of deployer, Total Supply): ",
+        deployerLpTokens_after,
+        totalLpTokens_after
+      );
+
+      let count = 0;
+
+      ethers.provider.on("block", async (blockNumber) => {
+        console.log("New Block", blockNumber);
+        count++;
+
+        //withdraw LP tokens from rewards pool after 10 blocks
+        if (count == 9) {
+          try {
+            await (await poolRewards.withdraw()).wait();
+          } catch (error) {
+            console.error(
+              "Error sending transactions(Withdraw LP Tokens):",
+              error
+            );
+          }
+        }
+
+        // approve LP tokens to Uniswap Router contract
+        if (count == 11) {
+          try {
+            //Check balance of LP Tokens removing LP tokens from Reward Contract
+            const deployerLpTokens = await uniswapPair
+              .attach(pairAddress)
+              .balanceOf(deployer);
+
+            await (
+              await uniswapPair
+                .attach(pairAddress)
+                .approve(uniswapRouter.target, deployerLpTokens)
+            ).wait();
+          } catch (error) {
+            console.error(
+              "Error sending transactions(Approving LP tokens to Uniswap Router):",
+              error
+            );
+          }
+        }
+        // Withdraw Liquidity(BSM-USDT) from BSM-USDT pool contract
+        if (count == 13) {
+          try {
+            //Check balance of LP Tokens removing LP tokens from Reward Contract
+            const deployerLpTokens = await uniswapPair
+              .attach(pairAddress)
+              .balanceOf(deployer);
+
+            const totalLpTokens = await uniswapPair
+              .attach(pairAddress)
+              .totalSupply();
+
+            console.log(
+              "LP Tokens After Removing LP Tokens from Reward Contract(Balance of deployer, Total Supply): ",
+              deployerLpTokens,
+              totalLpTokens
+            );
+
+            await (
+              await uniswapRouter.removeLiquidity(
+                bsm.target,
+                usdt.target,
+                deployerLpTokens,
+                0,
+                0,
+                deployer,
+                deadline
+              )
+            ).wait();
+          } catch (error) {
+            console.error(
+              "Error sending transactions(Remove Liquidity):",
+              error
+            );
+          }
+        }
+
+        //check the balance of bsm token (블록당 Reward - 1BSM으로 총 10BSM 증가해야 함)
+        if (count == 15) {
+          try {
+            const bsmTokenAmount = await bsm.balanceOf(deployer);
+            console.log(bsmTokenAmount);
+          } catch (error) {
+            console.error(
+              "Error sending transactions(Check Balance of BSM):",
+              error
+            );
+          }
+
+          console.log("Subscription done");
+          process.exit();
+        }
+      });
     });
   });
 });
