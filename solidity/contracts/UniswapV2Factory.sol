@@ -10,6 +10,8 @@ contract UniswapV2Factory is IUniswapV2Factory {
     bytes32 public constant PAIR_HASH =
         keccak256(type(UniswapV2Pair).creationCode);
 
+    bytes32 public constant INIT_CODE_PAIR_HASH = keccak256(abi.encodePacked(type(UniswapV2Pair).creationCode));
+
     address public override feeTo;
     address public override feeToSetter;
 
