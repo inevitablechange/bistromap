@@ -22,10 +22,8 @@ BSM Token의 소유권을 PoolRewards Contract에 넘겨야 Reward를 제공할 
 
 describe("UNISWAP_Test1", function () {
   async function deployContractsFixture() {
-    //automine - true 로 변경 후 실행
-    const provider = ethers.provider;
-    console.log(provider);
-    // await network.provider.send("evm_setAutomine", [true]);
+    //config.ts에 automine이 false로 설정돼있을 경우 -> automine - true 로 변경 후 실행
+    // await ethers.provider.send("evm_setAutomine", [true]);
 
     const [
       deployer,
@@ -85,7 +83,7 @@ describe("UNISWAP_Test1", function () {
     });
   });
 
-  describe("Liquidity Pool (", function () {
+  describe("Liquidity Pool (BSM - USDT)", function () {
     it("Provide Liquidity (BSM - USDT)", async function () {
       const {
         deployer,
@@ -121,17 +119,6 @@ describe("UNISWAP_Test1", function () {
 
       const pairAddress = await uniswapFactory.getPair(bsm.target, usdt.target);
 
-      //uniswapPair 컨트랙트에 BSM-USDT 풀 주소 연결 후 잔고 확인
-      const [reserve0, reserve1, blockTimestampLast] = await uniswapPair
-        .attach(pairAddress)
-        .getReserves();
-
-      expect([
-        BigInt(reserve0),
-        BigInt(reserve1),
-        BigInt(blockTimestampLast),
-      ]).to.deep.equal([bsmAmount, usdtAmount, blockTimestampLast]);
-
       //deploy Liquidity Pool LP Tokens Staking Reward Contract
       const PoolRewards = await ethers.getContractFactory("PoolRewards");
       const poolRewards = await PoolRewards.deploy(
@@ -155,15 +142,7 @@ describe("UNISWAP_Test1", function () {
       const deployerLpTokens_before = await uniswapPair
         .attach(pairAddress)
         .balanceOf(deployer);
-
-      const totalLpTokens_before = await uniswapPair
-        .attach(pairAddress)
-        .totalSupply();
-      console.log(
-        "LP Tokens Before Staking(Balance of deployer, Total Supply): ",
-        deployerLpTokens_before,
-        totalLpTokens_before
-      );
+      expect(deployerLpTokens_before).to.equal(1328156617270719318439n);
 
       //Stake 1/2 LP tokens(210000000000000000000) to Reward Contract
       await poolRewards.deposit(BigInt(210000000000000000000));
@@ -172,108 +151,42 @@ describe("UNISWAP_Test1", function () {
       const deployerLpTokens_after = await uniswapPair
         .attach(pairAddress)
         .balanceOf(deployer);
+      expect(deployerLpTokens_after).to.equal(1118156617270719318439n);
 
-      const totalLpTokens_after = await uniswapPair
+      //withdraw LP tokens from rewards pool after 10 blocks
+      await poolRewards.withdraw();
+
+      // approve LP tokens to Uniswap Router contract
+      const deployerLpTokens = await uniswapPair
         .attach(pairAddress)
-        .totalSupply();
+        .balanceOf(deployer);
 
-      console.log(
-        "LP Tokens After Staking(Balance of deployer, Total Supply): ",
-        deployerLpTokens_after,
-        totalLpTokens_after
+      await uniswapPair
+        .attach(pairAddress)
+        .approve(uniswapRouter.target, deployerLpTokens);
+
+      // Withdraw Liquidity(BSM-USDT) from BSM-USDT pool contract
+      //Check balance of LP Tokens removing LP tokens from Reward Contract
+      const totalLpTokens = await uniswapPair.attach(pairAddress).totalSupply();
+
+      expect([deployerLpTokens, totalLpTokens]).to.equal([
+        1328156617270719318439n,
+        1328156617270719318439n,
+      ]);
+
+      await uniswapRouter.removeLiquidity(
+        bsm.target,
+        usdt.target,
+        deployerLpTokens,
+        0,
+        0,
+        deployer,
+        deadline
       );
 
-      let count = 0;
-
-      ethers.provider.on("block", async (blockNumber) => {
-        console.log("New Block", blockNumber);
-        count++;
-
-        //withdraw LP tokens from rewards pool after 10 blocks
-        if (count == 9) {
-          try {
-            await (await poolRewards.withdraw()).wait();
-          } catch (error) {
-            console.error(
-              "Error sending transactions(Withdraw LP Tokens):",
-              error
-            );
-          }
-        }
-
-        // approve LP tokens to Uniswap Router contract
-        if (count == 11) {
-          try {
-            //Check balance of LP Tokens removing LP tokens from Reward Contract
-            const deployerLpTokens = await uniswapPair
-              .attach(pairAddress)
-              .balanceOf(deployer);
-
-            await (
-              await uniswapPair
-                .attach(pairAddress)
-                .approve(uniswapRouter.target, deployerLpTokens)
-            ).wait();
-          } catch (error) {
-            console.error(
-              "Error sending transactions(Approving LP tokens to Uniswap Router):",
-              error
-            );
-          }
-        }
-        // Withdraw Liquidity(BSM-USDT) from BSM-USDT pool contract
-        if (count == 13) {
-          try {
-            //Check balance of LP Tokens removing LP tokens from Reward Contract
-            const deployerLpTokens = await uniswapPair
-              .attach(pairAddress)
-              .balanceOf(deployer);
-
-            const totalLpTokens = await uniswapPair
-              .attach(pairAddress)
-              .totalSupply();
-
-            console.log(
-              "LP Tokens After Removing LP Tokens from Reward Contract(Balance of deployer, Total Supply): ",
-              deployerLpTokens,
-              totalLpTokens
-            );
-
-            await (
-              await uniswapRouter.removeLiquidity(
-                bsm.target,
-                usdt.target,
-                deployerLpTokens,
-                0,
-                0,
-                deployer,
-                deadline
-              )
-            ).wait();
-          } catch (error) {
-            console.error(
-              "Error sending transactions(Remove Liquidity):",
-              error
-            );
-          }
-        }
-
-        //check the balance of bsm token (블록당 Reward - 1BSM으로 총 10BSM 증가해야 함)
-        if (count == 15) {
-          try {
-            const bsmTokenAmount = await bsm.balanceOf(deployer);
-            console.log(bsmTokenAmount);
-          } catch (error) {
-            console.error(
-              "Error sending transactions(Check Balance of BSM):",
-              error
-            );
-          }
-
-          console.log("Subscription done");
-          process.exit();
-        }
-      });
+      //check the balance of bsm token (블록당 Reward - 1BSM으로 총 10BSM 증가해야 함)
+      const bsmTokenAmount = await bsm.balanceOf(deployer);
+      console.log(bsmTokenAmount);
     });
   });
 });

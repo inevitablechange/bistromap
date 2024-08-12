@@ -4,15 +4,22 @@ import "@nomicfoundation/hardhat-ethers";
 /** @type import('hardhat/config').HardhatUserConfig */
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.20",
-  networks: {
-    hardhat: {
-      mining: {
-        auto: false,
-        interval: 1000,
+  solidity: {
+    version: "0.8.20",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 2000,
       },
     },
   },
+  // networks: {
+  //   hardhat: {
+  //       auto: false,
+  //       interval: 2000,
+  //     },
+  //   },
+  // },
 };
 
 export default config;
