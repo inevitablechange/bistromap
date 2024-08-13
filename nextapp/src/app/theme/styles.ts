@@ -18,9 +18,9 @@ export const globalStyles = {
     },
     yellow: {
       200: "#FCFAE7",
-      300: "FFF69D",
-      400: "F3CD00",
-      neutral: "ECECE0",
+      300: "#FFF69D",
+      400: "#F3CD00",
+      neutral: "#ECECE0",
     },
     cream: "#FAF9F6",
   },
