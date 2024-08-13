@@ -19,25 +19,19 @@ describe("BSM and Reward Contracts", async function () {
   before(async function () {
     signers = await ethers.getSigners();
     [owner, addr1, addr2, addr3] = signers;
-    // usdtToken = await ethers.getContractAt("IERC20", process.env.USDT_ADDRESS!);
-    // // Deploy BSM token
+
+    // Deploy BSM token
     const BSM = await ethers.getContractFactory("BSM");
     bsmToken = await BSM.deploy(Math.floor(Date.now() / 1000)); // bistro
-    // // // Set USDT token address in BSM contract
-    const MockERC20 = await ethers.getContractFactory("MockERC20");
-    usdtToken = await MockERC20.deploy(
-      // usdt contract 배포
-      "Mock USDT",
-      "USDT",
-      18,
-      ethers.parseEther("1000000")
-    );
+    // Set USDT token address in BSM contract
+    const UsdtToken = await ethers.getContractFactory("USDT");
+    usdtToken = await UsdtToken.deploy();
 
-    await bsmToken.setUSDTToken(usdtToken.target);
-    // // // Deploy Reward contract
+    // Deploy Reward contract
     const Reward = await ethers.getContractFactory("Reward");
     rewardContract = await Reward.deploy(bsmToken.target);
-    // // // Mint BSM tokens to owner for testing
+    // Mint USDT, BSM tokens to owner for testing
+    await usdtToken.mint(owner.address, ethers.parseEther("100000"));
     await bsmToken.mint(owner.address, ethers.parseEther("100000"));
   });
 
@@ -47,8 +41,10 @@ describe("BSM and Reward Contracts", async function () {
       .connect(addr1)
       .approve(bsmToken.target, ethers.parseUnits("1000", 6));
 
-    await bsmToken.connect(addr1).buyPrivateSale(BigInt(100 * 10 ** 18));
-    const balance = await bsmToken.getBalance(addr1.address);
+    await bsmToken
+      .connect(addr1)
+      .buyPrivateSale(addr1.address, BigInt(100 * 10 ** 18));
+    const balance = await bsmToken.balanceOf(addr1.address);
     console.log({ balance });
     expect(balance).to.equal(BigInt(100 * 10 ** 18));
   });

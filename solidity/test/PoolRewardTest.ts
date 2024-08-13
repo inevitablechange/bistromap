@@ -34,7 +34,7 @@ describe("UNISWAP_Test1", function () {
     ] = await ethers.getSigners();
 
     const BSM = await ethers.getContractFactory("BSM");
-    const bsm = await BSM.deploy();
+    const bsm = await BSM.deploy(await time.latest());
 
     const USDT = await ethers.getContractFactory("USDT");
     const usdt = await USDT.deploy();
@@ -147,20 +147,26 @@ describe("UNISWAP_Test1", function () {
       //Stake 1/2 LP tokens(210000000000000000000) to Reward Contract
       await poolRewards.deposit(BigInt(210000000000000000000));
 
-      //Check balance of LP Tokens before Staking
+      //Check balance of LP Tokens after Staking
       const deployerLpTokens_after = await uniswapPair
         .attach(pairAddress)
         .balanceOf(deployer);
       expect(deployerLpTokens_after).to.equal(1118156617270719318439n);
 
-      //withdraw LP tokens from rewards pool after 10 blocks
+      // 블록을 30개 생성 (시간 경과를 시뮬레이션)
+      for (let i = 0; i < 30; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+
+      //withdraw LP tokens from rewards pool after 30 blocks
       await poolRewards.withdraw();
 
-      // approve LP tokens to Uniswap Router contract
       const deployerLpTokens = await uniswapPair
         .attach(pairAddress)
         .balanceOf(deployer);
+      expect(deployerLpTokens).to.equal(1328156617270719318439n);
 
+      // approve LP tokens to Uniswap Router contract
       await uniswapPair
         .attach(pairAddress)
         .approve(uniswapRouter.target, deployerLpTokens);
@@ -169,10 +175,7 @@ describe("UNISWAP_Test1", function () {
       //Check balance of LP Tokens removing LP tokens from Reward Contract
       const totalLpTokens = await uniswapPair.attach(pairAddress).totalSupply();
 
-      expect([deployerLpTokens, totalLpTokens]).to.equal([
-        1328156617270719318439n,
-        1328156617270719318439n,
-      ]);
+      expect(totalLpTokens).to.equal(1328156617270719319439n);
 
       await uniswapRouter.removeLiquidity(
         bsm.target,
@@ -186,7 +189,7 @@ describe("UNISWAP_Test1", function () {
 
       //check the balance of bsm token (블록당 Reward - 1BSM으로 총 10BSM 증가해야 함)
       const bsmTokenAmount = await bsm.balanceOf(deployer);
-      console.log(bsmTokenAmount);
+      expect(bsmTokenAmount).to.equal(450999999999999999683n);
     });
   });
 });
