@@ -4,7 +4,7 @@ pragma solidity >=0.8.2 <0.9.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./utils/Counters.sol";
-import "./ERC20.sol"; // BSM token contract
+import "./BsmToken.sol"; // BSM token contract
 
 contract BannerNFT is ERC721, Ownable(msg.sender) {
     using Counters for Counters.Counter;

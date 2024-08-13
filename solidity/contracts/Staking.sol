@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.2 <0.9.0;
 
-import "./ERC20.sol"; // BSM 컨트랙트를 import합니다.
+import "./BsmToken.sol"; // BSM 컨트랙트를 import합니다.
 
 contract StakingContract {
     BSM public BSMToken;

@@ -20,7 +20,6 @@ contract BSM is ERC20, Ownable(msg.sender) {
     uint public privateSalesRelease;
     mapping(address => uint256) private privateSaleBalances;
     mapping(address => uint256) private _released;
-    uint private privateSalesStartTime;
     address[] beneficiaries;
     
     constructor(uint _privateSalesStart) ERC20("Bistro", "BSM") {
@@ -45,7 +44,7 @@ contract BSM is ERC20, Ownable(msg.sender) {
     
     function release() external {
         // 20 % -> 6개월 후, 30 % => 12개월 후 50% => 24개월 후
-        uint256 elapsedTime = block.timestamp - (privateSalesStartTime + 2 weeks);
+        uint256 elapsedTime = block.timestamp - (privateSalesStart + privateSalesDuring);
         require(elapsedTime >= 24 weeks, "Released after 6 months of private sales");
         for (uint i = 0; i < beneficiaries.length; i++) {
             address beneficiary = beneficiaries[i];
