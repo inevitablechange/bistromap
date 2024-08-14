@@ -3,7 +3,7 @@ const { expect } = require("chai");
 
 const web3 = new Web3("http://localhost:8545"); // Ethereum 테스트 네트워크 URL
 
-const BSMTokenArtifact = require("../artifacts/contracts/ERC20.sol/BSM.json");
+const BSMTokenArtifact = require("../artifacts/contracts/BsmToken.sol/BSM.json");
 const StakingContractArtifact = require("../artifacts/contracts/Staking.sol/StakingContract.json");
 
 let bsmToken, stakingContract;

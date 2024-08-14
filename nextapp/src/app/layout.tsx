@@ -1,6 +1,7 @@
-import "./globals.css";
 import { Providers } from "./providers";
-import Header from "../components/header"; // 경로를 설정하세요.
+import { Flex } from "@chakra-ui/react";
+import Header from "../components/Header";
+import Footer from "@/components/Footer";
 
 export default function RootLayout({
   children,
@@ -11,8 +12,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Header />
-          {children}
+          <Flex minH="100vh" flexDir={"column"} alignItems="center">
+            <Header />
+            {children}
+            <Footer />
+          </Flex>
         </Providers>
       </body>
     </html>

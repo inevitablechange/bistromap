@@ -1,34 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Flex } from "@chakra-ui/react";
+import NavBar from "./Navbar";
+import { NextPage } from "next";
 
-const Header = () => {
-  const [account, setAccount] = useState<string | null>(null);
-
-  const connectWallet = async () => {
-    if (typeof window.ethereum !== "undefined") {
-      try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        setAccount(accounts[0]);
-      } catch (error) {
-        console.error("Failed to connect to MetaMask:", error);
-      }
-    } else {
-      console.log("MetaMask is not installed");
-    }
-  };
-
+const Header: NextPage = () => {
   return (
-    <header>
-      <nav>
-        <h1>My DApp</h1>
-        <button onClick={connectWallet}>
-          {account ? `Connected: ${account}` : "Connect to MetaMask"}
-        </button>
-      </nav>
-    </header>
+    <Flex minWidth={"1440px"} justifyContent={"center"}>
+      <NavBar />
+    </Flex>
   );
 };
 

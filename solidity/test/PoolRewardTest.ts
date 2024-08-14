@@ -9,14 +9,10 @@ import { ethers } from "hardhat";
 
 /* 
 주의점 1)
-블록에 트랜잭션이 담기고 다음 단계로 넘어가기 위해서는 wait() 함수를 활용해야 한다.
-wait을 쓰기 위해서는 await (await 함수명).wait() 형식으로 사용해야 한다. 
-
-주의점 2)
 유니스왑 Factory 컨트랙트 내 INIT_CODE_PAIR_HASH 트랜잭션에 따라 달라질 수 있다.
 변경이 필요할 경우, INIT_CODE_PAIR_HASH값을 참고해서 UniswapV2Library.sol > pairFor함수 내 hex값을 변경해야 한다.
 
-주의점 3)
+주의점 2)
 BSM Token의 소유권을 PoolRewards Contract에 넘겨야 Reward를 제공할 때 mint()함수를 사용할 수 있게 된다.
 */
 
