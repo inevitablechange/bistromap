@@ -32,13 +32,13 @@ const Footer: NextPage = () => {
         direction={{ base: "column", md: "row" }}
       >
         <Box maxW="300px">
-          <Link href="https://templateskart.com" isExternal>
+          {/* <Link href="https://templateskart.com" isExternal>
             <Image
               w="100px"
               src="/assets/images/layouts/hero_image.png"
               alt="TemplatesKart"
             />
-          </Link>
+          </Link> */}
           <Text mt={2} color="gray.500" fontSize="md">
             Build fully functional accessible web applications faster than ever
           </Text>

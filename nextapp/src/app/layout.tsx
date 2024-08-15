@@ -1,7 +1,7 @@
 import { Providers } from "./providers";
 import { Flex } from "@chakra-ui/react";
-import Header from "../components/Header";
-import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+// import Footer from "@/components/Footer";
 
 export default function RootLayout({
   children,
@@ -15,7 +15,7 @@ export default function RootLayout({
           <Flex minH="100vh" flexDir={"column"} alignItems="center">
             <Header />
             {children}
-            <Footer />
+            {/* <Footer /> */}
           </Flex>
         </Providers>
       </body>
