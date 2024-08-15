@@ -1,14 +1,13 @@
 "use client";
 
-import { Flex } from "@chakra-ui/react";
 import NavBar from "./Navbar";
 import { NextPage } from "next";
 
 const Header: NextPage = () => {
   return (
-    <Flex minWidth={"1440px"} justifyContent={"center"}>
+    <header style={{ width: "100%", borderBottom: "1px solid #e3e3e3" }}>
       <NavBar />
-    </Flex>
+    </header>
   );
 };
 

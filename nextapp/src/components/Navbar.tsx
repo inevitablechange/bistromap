@@ -13,7 +13,6 @@ import {
   PopoverTrigger,
   PopoverContent,
   useColorModeValue,
-  useBreakpointValue,
   useDisclosure,
 } from "@chakra-ui/react";
 import {
@@ -24,6 +23,8 @@ import {
 } from "@chakra-ui/icons";
 import { useState } from "react";
 import { NextPage } from "next";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const NavBar: NextPage = () => {
   const { isOpen, onToggle } = useDisclosure();
@@ -45,16 +46,12 @@ const NavBar: NextPage = () => {
   };
 
   return (
-    <Flex bgColor="red.100" maxW={"1440px"} flex={{ base: 1 }}>
+    <Flex width={"1440px"} marginX={"auto"}>
       <Flex
-        color={useColorModeValue("gray.600", "white")}
         minH={"60px"}
         maxW={"full"}
         py={{ base: 2 }}
         px={{ base: 4 }}
-        borderBottom={1}
-        borderStyle={"solid"}
-        borderColor={useColorModeValue("gray.200", "gray.900")}
         flex={{ base: 1 }}
         justify={"space-between"}
       >
@@ -72,32 +69,29 @@ const NavBar: NextPage = () => {
             aria-label={"Toggle Navigation"}
           />
         </Flex>
-        <Flex
-          flex={{ base: 1 }}
-          justify={{ base: "center", md: "start" }}
-          align={"center"}
-        >
-          <Text
-            textAlign={useBreakpointValue({ base: "center", md: "left" })}
-            fontFamily={"heading"}
-            color={useColorModeValue("gray.800", "white")}
-          >
-            Logo
-          </Text>
-        </Flex>
-
+        <Image width={150} height={44} src="/assets/logo.png" alt="BistroMap" />
         <Stack
           flex={{ base: 1, md: 0 }}
+          alignItems={"center"}
           justify={"flex-end"}
           direction={"row"}
-          spacing={6}
+          spacing={2}
         >
-          <Flex display={{ base: "none", md: "flex" }} ml={10} align={"center"}>
+          <Flex
+            display={{ base: "none", md: "flex" }}
+            ml={10}
+            mr={12}
+            align={"center"}
+          >
             <DesktopNav />
           </Flex>
-          <Button colorScheme="chocolate.light">Write</Button>
-          <Button colorScheme="yellow.400">
-            {account ? `Conected: ${account}` : "Connect Wallet"}
+          <Button colorScheme="chocolate.light" fontSize={14}>
+            Write
+          </Button>
+          <Button colorScheme="yellow.400" fontSize={14}>
+            {account
+              ? `${account.slice(0, 4)}...${account.slice(account.length - 4)}`
+              : "Connect Wallet"}
           </Button>
         </Stack>
       </Flex>
@@ -110,6 +104,7 @@ const NavBar: NextPage = () => {
 };
 
 const DesktopNav = () => {
+  const pathname = usePathname();
   const linkColor = useColorModeValue("gray.600", "gray.200");
   const linkHoverColor = useColorModeValue("gray.800", "white");
   const popoverContentBgColor = useColorModeValue("white", "gray.800");
@@ -117,7 +112,7 @@ const DesktopNav = () => {
   return (
     <Stack direction={"row"} spacing={4}>
       {NAV_ITEMS.map((navItem) => (
-        <Box key={navItem.label}>
+        <Flex key={navItem.label} justifyContent={"center"} width={90}>
           <Popover trigger={"hover"} placement={"bottom-start"}>
             <PopoverTrigger>
               <Box
@@ -125,8 +120,8 @@ const DesktopNav = () => {
                 p={2}
                 href={navItem.href ?? "#"}
                 fontSize={"sm"}
-                fontWeight={500}
-                color={linkColor}
+                fontWeight={navItem.href == pathname ? 600 : 500}
+                color={navItem.href == pathname ? "gray.900" : linkColor}
                 _hover={{
                   textDecoration: "none",
                   color: linkHoverColor,
@@ -153,7 +148,7 @@ const DesktopNav = () => {
               </PopoverContent>
             )}
           </Popover>
-        </Box>
+        </Flex>
       ))}
     </Stack>
   );
@@ -244,14 +239,7 @@ const MobileNavItem = ({ label, children, href }: NavItem) => {
       </Box>
 
       <Collapse in={isOpen} animateOpacity style={{ marginTop: "0!important" }}>
-        <Stack
-          mt={2}
-          pl={4}
-          borderLeft={1}
-          borderStyle={"solid"}
-          borderColor={useColorModeValue("gray.200", "gray.700")}
-          align={"start"}
-        >
+        <Stack mt={2} pl={4} borderLeft={1} align={"start"}>
           {children &&
             children.map((child) => (
               <Box as="a" key={child.label} py={2} href={child.href}>
@@ -278,15 +266,15 @@ const NAV_ITEMS: Array<NavItem> = [
   },
   {
     label: "Swap",
-    href: "/",
+    href: "/swap",
   },
   {
     label: "Reviews",
-    href: "/",
+    href: "/reviews",
   },
   {
-    label: "Selection",
-    href: "/",
+    label: "Selections",
+    href: "/selections",
   },
 ];
 
