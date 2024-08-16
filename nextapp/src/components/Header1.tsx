@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 
 import Web3 from "web3";
+
 import NavBar from "./Navbar"; // NavBar 컴포넌트를 불러옵니다
 import { useRouter } from "next/navigation";
 
