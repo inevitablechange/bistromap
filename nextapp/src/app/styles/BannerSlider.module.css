@@ -1,0 +1,119 @@
+.slider {
+  width: 100%;
+  max-width: 1200px; /* 슬라이더의 최대 너비를 설정합니다. */
+  margin: 0 auto; /* 중앙 정렬 */
+  position: relative; /* 점과 화살표를 슬라이더 내에 배치하기 위해 필요 */
+}
+
+.banner-image {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  transition: transform 0.3s ease; /* 확대 효과를 위한 전환 효과 */
+  cursor: pointer; /* 손가락 모양 커서 추가 */
+}
+
+.banner {
+  text-align: center;
+  cursor: pointer;
+}
+
+.banner h3 {
+  margin-top: 10px;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.slider img {
+  width: 100%;
+  height: auto;
+  transition: transform 0.3s ease; /* 확대 효과를 위한 전환 효과 */
+  cursor: pointer; /* 손가락 모양 커서 추가 */
+}
+
+.slider img:hover,
+.banner-image:hover {
+  transform: scale(1.05); /* 확대 효과 */
+}
+
+.slick-slide {
+  padding: 0 10px; /* 슬라이드 사이의 여백을 설정합니다. */
+}
+
+.slick-dots {
+  bottom: 10px; /* 점의 위치를 설정합니다. */
+  position: absolute; /* 슬라이더 내부에서 위치를 제어하기 위해 필요 */
+  width: 100%;
+  text-align: center; /* 점을 슬라이더 중앙에 정렬 */
+}
+
+.slick-dots li {
+  display: inline-block;
+}
+
+.slick-dots li button:before {
+  font-size: 30px; /* 점의 크기를 조정합니다. */
+  color: #333; /* 점의 색상을 설정합니다. */
+}
+
+.slick-dots li.slick-active button:before {
+  color: #f00; /* 활성화된 점의 색상을 설정합니다. */
+}
+
+.slick-prev,
+.slick-next {
+  width: 50px; /* 화살표의 너비를 설정합니다. */
+  height: 50px; /* 화살표의 높이를 설정합니다. */
+  background-color: rgba(0, 0, 0, 0.5); /* 화살표 배경색 */
+  border-radius: 50%; /* 화살표 모양을 원형으로 설정합니다. */
+  color: #fff; /* 화살표 색상 */
+  z-index: 1; /* 화살표를 위쪽으로 표시합니다. */
+  opacity: 0.75; /* 화살표의 투명도 */
+  transition: opacity 0.3s ease; /* 화살표의 전환 효과 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px; /* 화살표의 크기 설정 */
+  cursor: pointer; /* 손가락 모양 커서 추가 */
+}
+
+.slick-prev:hover,
+.slick-next:hover {
+  opacity: 1; /* 호버 시 투명도 변경 */
+}
+
+.slick-prev:before {
+  content: "←"; /* 왼쪽 화살표 기호 */
+}
+
+.slick-next:before {
+  content: "→"; /* 오른쪽 화살표 기호 */
+}
+
+.slick-prev {
+  left: 10px; /* 왼쪽 화살표 위치 */
+  top: 50%; /* 수직 중앙 정렬 */
+  transform: translateY(-50%); /* 수직 중앙 정렬 보정 */
+}
+
+.slick-next {
+  right: 10px; /* 오른쪽 화살표 위치 */
+  top: 50%; /* 수직 중앙 정렬 */
+  transform: translateY(-50%); /* 수직 중앙 정렬 보정 */
+}
+
+.custom-indicator {
+  text-align: center; /* 인디케이터를 슬라이더 중앙에 정렬 */
+  margin-top: 10px;
+}
+
+.custom-indicator .dot {
+  font-size: 24px; /* 점의 크기 설정 */
+  color: #333; /* 점의 기본 색상 */
+  margin: 0 5px;
+  transition: color 0.3s ease; /* 색상 전환 효과 */
+}
+
+.custom-indicator .active {
+  color: #f00; /* 활성화된 점의 색상 */
+}
