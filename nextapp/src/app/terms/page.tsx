@@ -1,10 +1,13 @@
+import { Box, Heading } from "@chakra-ui/react";
 import React from "react";
 
 const Page = () => {
   return (
-    <div>
-      <h1>Bistro Map Terms of Service</h1>
-      <h2>1. Introduction </h2>
+    <Box maxW="1024px" fontSize={"large"} marginY={10}>
+      <Heading marginBottom={6}>Terms of Service</Heading>
+      <Heading as="h3" size="lg" marginY={6}>
+        1. Introduction{" "}
+      </Heading>
       <p>
         Welcome to Bistro Map! These Terms of Service (the “Terms”) govern your
         use of our platform, including our website and mobile applications
@@ -12,14 +15,18 @@ const Page = () => {
         agree to comply with and be bound by these Terms. If you do not agree
         with these Terms, you may not use our Services.
       </p>
-      <h2>2. Service Overview</h2>
+      <Heading as="h3" size="lg" marginY={6}>
+        2. Service Overview
+      </Heading>
       <p>
         Bistro Map utilizes blockchain technology to offer restaurant reviews,
         ratings, and related features. Users can log in via MetaMask wallet,
         explore restaurant details, submit reviews, and interact with other
         users on the platform.
       </p>
-      <h2>3. User Responsibilities</h2>
+      <Heading as="h3" size="lg" marginY={6}>
+        3. User Responsibilities
+      </Heading>
       <p>
         Lawful Use: You must use our Services in a lawful and appropriate manner
         and must not post or share any illegal or inappropriate content.
@@ -28,34 +35,35 @@ const Page = () => {
         Compliance: You must adhere to these Terms and all applicable laws while
         using our Services.
       </p>
-      <h2>4. Content</h2>
-      <p>
-        <ol>
-          <li>
-            Ownership:All content on Bistro Map (including text, images,
-            reviews, etc.) is owned by us. You may not reproduce, distribute, or
-            modify any content without our prior written permission.
-          </li>
-          <li>
-            User-Generated Content: You are responsible for ensuring that any
-            content you post is accurate and does not infringe on the rights of
-            others. We reserve the right to review, modify, or delete
-            user-generated content as necessary.
-          </li>
-          <li>
-            Content Review: We may monitor and moderate content to ensure
-            compliance with our policies and legal requirements.
-          </li>
-        </ol>
-      </p>
-      <h2>5. Blockchain and Rewards System</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        4. Content
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
+        <li>
+          Ownership:All content on Bistro Map (including text, images, reviews,
+          etc.) is owned by us. You may not reproduce, distribute, or modify any
+          content without our prior written permission.
+        </li>
+        <li>
+          User-Generated Content: You are responsible for ensuring that any
+          content you post is accurate and does not infringe on the rights of
+          others. We reserve the right to review, modify, or delete
+          user-generated content as necessary.
+        </li>
+        <li>
+          Content Review: We may monitor and moderate content to ensure
+          compliance with our policies and legal requirements.
+        </li>
+      </ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        5. Blockchain and Rewards System
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li>
           Rewards: Users may earn rewards for contributing reviews and engaging
           with the platform, distributed through blockchain technology.
         </li>
         <li>
-          {" "}
           Distribution: Rewards and tokens are subject to the platform’s
           policies and may change without prior notice.{" "}
         </li>
@@ -64,10 +72,11 @@ const Page = () => {
           any rewards or tokens earned on the platform.
         </li>
       </ol>
-      <h2> 6. Privacy</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        6. Privacy
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li>
-          {" "}
           Data Protection: We are committed to protecting your personal data.
           Our privacy practices are detailed in our separate Privacy Policy,
           which you consent to by using our Services.
@@ -77,8 +86,10 @@ const Page = () => {
           or to protect our rights, and we will notify you accordingly.
         </li>
       </ol>
-      <h2>7. Service Limitations and Termination</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        7. Service Limitations and Termination
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li>
           Access Restrictions: We reserve the right to limit or terminate your
           access to our Services for violations of these Terms or for illegal
@@ -90,8 +101,10 @@ const Page = () => {
           delete any data or content associated with your account.
         </li>
       </ol>
-      <h2>8. Disclaimer of Warranties</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        8. Disclaimer of Warranties
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li>
           No Liability: We are not liable for any damages resulting from the use
           of our Services.
@@ -101,8 +114,10 @@ const Page = () => {
           uninterrupted, error-free, or entirely accurate.
         </li>
       </ol>
-      <h2>9. Changes to Terms</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        9. Changes to Terms
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li>
           Modifications: We may update these Terms from time to time. Any
           changes will be effective when posted on the platform.
@@ -112,8 +127,10 @@ const Page = () => {
           deciding whether to continue using our Services.
         </li>
       </ol>
-      <h2>10. Governing Law and Disputes</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        10. Governing Law and Disputes
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li> Legal Compliance: These Terms are governed by applicable laws.</li>
         <li>
           Dispute Resolution: Any disputes arising from these Terms will be
@@ -121,12 +138,17 @@ const Page = () => {
           headquarters.
         </li>
       </ol>
-      <h2>11. Contact Information</h2>
-      <ol>
+      <Heading as="h3" size="lg" marginY={6}>
+        11. Contact Information
+      </Heading>
+      <ol style={{ paddingInlineStart: 30 }}>
         <li>Email: support@bistromap.com</li>
-        <li>Address: Gyeomjaero 18gil 32, Jungnang-gu, Seoul City</li>
+        <li>
+          Address: Gyeomjaero 18gil 32, Jungnang-gu, Seoul City, Republic of
+          Korea
+        </li>
       </ol>
-    </div>
+    </Box>
   );
 };
 
