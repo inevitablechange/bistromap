@@ -2,135 +2,47 @@
 
 import { NextPage } from "next";
 
-import {
-  Box,
-  Stack,
-  HStack,
-  VStack,
-  Link,
-  Divider,
-  Image,
-  Text,
-  Button,
-  LinkProps,
-} from "@chakra-ui/react";
-// Here we have used react-icons package for the icons
+import { Stack, HStack, VStack, Link, Flex } from "@chakra-ui/react";
 
 const Footer: NextPage = () => {
   return (
-    <Box
-      bgColor="blue.100"
+    <Flex
+      bgColor="gray.200"
       p={{ base: 5, md: 8 }}
-      maxW="5xl"
-      marginInline="auto"
-      minWidth={"1440px"}
-      justifyContent={"center"}
+      w="100%"
+      justifyContent="center"
     >
       <Stack
+        w={1280}
+        px={8}
         spacing={{ base: 8, md: 0 }}
-        justifyContent="space-between"
         direction={{ base: "column", md: "row" }}
       >
-        <Box maxW="300px">
-          {/* <Link href="https://templateskart.com" isExternal>
-            <Image
-              w="100px"
-              src="/assets/images/layouts/hero_image.png"
-              alt="TemplatesKart"
-            />
-          </Link> */}
-          <Text mt={2} color="gray.500" fontSize="md">
-            Build fully functional accessible web applications faster than ever
-          </Text>
-        </Box>
         <HStack
           spacing={4}
           justifyContent={{ sm: "space-between", md: "normal" }}
         >
           <VStack spacing={4} alignItems="flex-start">
-            <Text fontSize="md" fontWeight="bold">
-              About
-            </Text>
-            <VStack spacing={2} alignItems="flex-start" color="gray.500">
-              <CustomLink>Contrinute</CustomLink>
-              <CustomLink>Media assets</CustomLink>
-              <CustomLink>Changelog</CustomLink>
-              <CustomLink>Releases</CustomLink>
-            </VStack>
-          </VStack>
-          <VStack spacing={4} alignItems="flex-start">
-            <Text fontSize="md" fontWeight="bold">
-              Community
-            </Text>
-            <VStack spacing={2} alignItems="flex-start" color="gray.500">
-              <CustomLink>Chat on Discord</CustomLink>
-              <CustomLink>Follow on Twitter</CustomLink>
-              <CustomLink>Follow on Github</CustomLink>
-              <CustomLink>Github discussions</CustomLink>
-            </VStack>
-          </VStack>
-          <VStack spacing={4} alignItems="flex-start">
-            <Text fontSize="md" fontWeight="bold">
-              Project
-            </Text>
-            <VStack spacing={2} alignItems="flex-start" color="gray.500">
-              <CustomLink>TemplatesKart</CustomLink>
-              <CustomLink>Documentation</CustomLink>
-              <CustomLink>Github organization</CustomLink>
-              <CustomLink>npm organization</CustomLink>
-            </VStack>
+            <Link
+              href="/terms"
+              fontSize="sm"
+              _hover={{ textDecoration: "underline" }}
+              target="_blank"
+            >
+              Terms of Service
+            </Link>
+            <Flex
+              gap={2}
+              fontSize="xs"
+              alignItems="flex-start"
+              color="gray.500"
+            >
+              © 2024 Elephant Poooh - All rights reserved
+            </Flex>
           </VStack>
         </HStack>
       </Stack>
-
-      <Divider my={4} />
-
-      <Stack
-        direction={{ base: "column", md: "row" }}
-        spacing={3}
-        justifyContent="space-between"
-      >
-        <Text fontSize="md">
-          Built by{" "}
-          <Link
-            href="https://github.com/MA-Ahmad"
-            textDecoration="underline"
-            _hover={{ textDecoration: "underline" }}
-            isExternal
-          >
-            Muhammad Ahmad
-          </Link>
-        </Text>
-        <Stack spacing={2} direction={{ base: "column", md: "row" }}>
-          <Button as={Link} href="#" rounded="md">
-            Github Discussions
-          </Button>
-          <Button
-            as={Link}
-            href="#"
-            rounded="md"
-            color="white"
-            bg="purple.500"
-            _hover={{ bg: "purple.600" }}
-          >
-            Discord community
-          </Button>
-        </Stack>
-      </Stack>
-    </Box>
-  );
-};
-
-const CustomLink = ({ children, ...props }: LinkProps) => {
-  return (
-    <Link
-      href="#"
-      fontSize="sm"
-      _hover={{ textDecoration: "underline" }}
-      {...props}
-    >
-      {children}
-    </Link>
+    </Flex>
   );
 };
 
