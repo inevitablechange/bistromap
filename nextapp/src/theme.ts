@@ -5,6 +5,7 @@ import "@fontsource/plus-jakarta-sans"; // 설치한 폰트를 import
 const colors = {
   primary: "#F3CD00",
   gray: {
+    200: "#D3DCE7",
     300: "#BDBDBD",
     800: "#484542",
     900: "#1A202C",
