@@ -46,16 +46,9 @@ const NavBar: NextPage = () => {
   };
 
   return (
-    <Flex
-      bgColor="red.100"
-      marginX={"auto"}
-      maxW={"5xl"}
-      minWidth={"1440px"}
-      flex={{ base: 1 }}
-    >
+    <Flex marginX={"auto"} maxWidth={"1280px"} flex={{ base: 1 }}>
       <Flex
-        minH={"60px"}
-        maxW={"5xl"}
+        h={"60px"}
         py={{ base: 2 }}
         px={{ base: 4 }}
         flex={{ base: 1 }}

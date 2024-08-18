@@ -53,7 +53,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header style={{ width: "100%", borderBottom: "1px solid #e3e3e3" }}>
+    <header style={{ width: "100%", borderBottom: "1px solid #486284" }}>
       <NavBar />
     </header>
   );

@@ -6,7 +6,7 @@ import "slick-carousel/slick/slick-theme.css";
 import React from "react";
 import Slider from "react-slick";
 import Banner from "./Banner";
-import styles from "../app/styles/BannerSlider.module.css";
+import styles from "@/app/styles/BannerSlider.module.css";
 
 const banners = [
   { image: "/images/banner1.jpg" }, // 민트 페이지 링크
