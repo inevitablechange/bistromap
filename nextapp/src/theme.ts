@@ -40,7 +40,9 @@ const theme = extendTheme({
           bg:
             props.colorScheme === "chocolate.light"
               ? "chocolate.light"
-              : "yellow.400",
+              : props.colorScheme === "yellow.400"
+              ? "yellow.400"
+              : "transparent",
         }),
       },
     },
