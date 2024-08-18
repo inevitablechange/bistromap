@@ -1,8 +1,18 @@
 .slider {
   width: 100%;
-  max-width: 1200px; /* 슬라이더의 최대 너비를 설정합니다. */
+  max-width: 1440px; /* 슬라이더의 최대 너비를 설정합니다. */
   margin: 0 auto; /* 중앙 정렬 */
   position: relative; /* 점과 화살표를 슬라이더 내에 배치하기 위해 필요 */
+}
+
+.bannerContainer {
+  cursor: pointer;
+  position: relative;
+}
+
+.bannerImage {
+  width: 100%;
+  height: auto;
 }
 
 .banner-image {
