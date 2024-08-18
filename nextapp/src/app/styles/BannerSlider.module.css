@@ -26,14 +26,8 @@
 
 .slider img {
   width: 100%;
-  height: auto;
-  transition: transform 0.3s ease; /* 확대 효과를 위한 전환 효과 */
+  height: 300px;
   cursor: pointer; /* 손가락 모양 커서 추가 */
-}
-
-.slider img:hover,
-.banner-image:hover {
-  transform: scale(1.05); /* 확대 효과 */
 }
 
 .slick-slide {

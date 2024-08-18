@@ -13,8 +13,10 @@ const colors = {
     light: "#59412F",
     dark: "#2F1B0C",
   },
+  indigoNight: "#486284",
   yellow: {
-    200: "#FCFAE7",
+    100: "#FCFAE7",
+    200: "#FFFDD0",
     300: "#FFF69D",
     400: "#F3CD00",
     neutral: "#ECECE0",
