@@ -20,14 +20,15 @@ const Banner: React.FC<BannerProps> = ({ image, link }) => {
 
   return (
     <div className={styles.bannerContainer} onClick={handleClick}>
-      <Image
+      <img src={image} alt="Banner" />
+      {/* <Image
         src={image}
         alt="Banner"
         layout="responsive"
-        width={900}
-        height={400}
+        width={700}
+        height={200}
         className={styles.bannerImage} // 스타일 추가
-      />
+      /> */}
     </div>
   );
 };
