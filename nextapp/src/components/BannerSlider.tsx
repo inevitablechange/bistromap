@@ -6,10 +6,10 @@ import React, { useEffect, useState } from "react";
 import Slider from "react-slick";
 import Image from "next/image";
 import Link from "next/link";
-import styles from "../app/styles/BannerSlider.module.css";
 import { ethers } from "ethers";
 import abi from "./abi.json";
 // import BannerNFT from "../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
+import styles from "@/app/styles/BannerSlider.module.css";
 
 const bannerNFTAddress = "0x21d676bEf25F02CDeb1CBEd897f8547CCA306577";
 
