@@ -30,23 +30,25 @@ const BannerSlider: React.FC = () => {
       const contract = new ethers.Contract(bannerNFTAddress, abi, signer);
 
       try {
-        console.log("contract::", contract);
         const totalSupply = await contract.totalSupply();
-        console.log({ totalSupply });
         const banners = [];
         console.log(Number(totalSupply));
-        for (
-          let i = Number(totalSupply);
-          i > Number(totalSupply) - 2 && i > 0;
-          i--
-        ) {
-          // 최근 2개 가져오기
-          const tokenURI = await contract.tokenURI(i);
-          console.log({ tokenURI });
-          const response = await fetch(tokenURI);
-          const metadata = await response.json();
-          banners.push({ image: metadata.image, link: metadata.description });
-        }
+        const tokenURI = await contract.tokenURI(1); // debugging 중...
+        console.log({ tokenURI });
+        const response = await fetch(tokenURI);
+        const metadata = await response.json();
+        banners.push({ image: metadata.image, link: metadata.description });
+        // for (
+        //   let i = Number(totalSupply);
+        //   i > Number(totalSupply) - 2 && i > 0;
+        //   i--
+        // ) {
+        //   // 최근 2개 가져오기
+        //   const tokenURI = await contract.tokenURI(i);
+        //   const response = await fetch(tokenURI);
+        //   const metadata = await response.json();
+        //   banners.push({ image: metadata.image, link: metadata.description });
+        // }
 
         setNftBanners(banners);
         setLoading(false);
