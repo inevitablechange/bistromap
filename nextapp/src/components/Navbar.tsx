@@ -4,7 +4,6 @@ import {
   Box,
   Flex,
   Text,
-  IconButton,
   Button,
   Stack,
   Collapse,
@@ -14,20 +13,18 @@ import {
   PopoverContent,
   useColorModeValue,
   useDisclosure,
+  PopoverArrow,
+  PopoverHeader,
+  Heading,
 } from "@chakra-ui/react";
-import {
-  HamburgerIcon,
-  CloseIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-} from "@chakra-ui/icons";
-import { useState } from "react";
+import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 const NavBar: NextPage = () => {
-  const { isOpen, onToggle } = useDisclosure();
+  const { isOpen, onClose, onOpen } = useDisclosure();
   const [account, setAccount] = useState<string | null>(null);
 
   const connectWallet = async () => {
@@ -37,6 +34,7 @@ const NavBar: NextPage = () => {
           method: "eth_requestAccounts",
         });
         setAccount(accounts[0]);
+        window.localStorage.setItem("loggedIn", "true");
       } catch (error) {
         console.error("Failed to connect to MetaMask:", error);
       }
@@ -45,6 +43,16 @@ const NavBar: NextPage = () => {
     }
   };
 
+  const disconnectWallet = () => {
+    onClose();
+    setAccount(null);
+    window.localStorage.removeItem("loggedIn");
+  };
+
+  useEffect(() => {
+    const isLoggedIn = !!window.localStorage.getItem("loggedIn");
+    isLoggedIn && connectWallet();
+  }, []);
   return (
     <Flex marginX={"auto"} maxWidth={"1280px"} flex={{ base: 1 }}>
       <Flex
@@ -54,20 +62,6 @@ const NavBar: NextPage = () => {
         flex={{ base: 1 }}
         justify={"space-between"}
       >
-        <Flex
-          flex={{ base: 1, md: "auto" }}
-          ml={{ base: -2 }}
-          display={{ base: "flex", md: "none" }}
-        >
-          <IconButton
-            onClick={onToggle}
-            icon={
-              isOpen ? <CloseIcon w={3} h={3} /> : <HamburgerIcon w={5} h={5} />
-            }
-            variant={"ghost"}
-            aria-label={"Toggle Navigation"}
-          />
-        </Flex>
         <Image width={150} height={44} src="/assets/logo.png" alt="BistroMap" />
         <Stack
           flex={{ base: 1, md: 0 }}
@@ -87,17 +81,39 @@ const NavBar: NextPage = () => {
           <Button colorScheme="chocolate.light" fontSize={14}>
             Write
           </Button>
-          <Button colorScheme="yellow.400" fontSize={14}>
-            {account
-              ? `${account.slice(0, 4)}...${account.slice(account.length - 4)}`
-              : "Connect Wallet"}
-          </Button>
+          <Popover isOpen={isOpen} closeOnBlur={true} closeOnEsc={true}>
+            <PopoverTrigger>
+              {account ? (
+                <Button
+                  colorScheme="yellow.400"
+                  fontSize={14}
+                  width={32}
+                  onClick={onOpen}
+                >{`${account.slice(0, 4)}...${account.slice(
+                  account.length - 4
+                )}`}</Button>
+              ) : (
+                <Button
+                  colorScheme="yellow.400"
+                  fontSize={14}
+                  width={32}
+                  onClick={connectWallet}
+                >
+                  Connect Wallet
+                </Button>
+              )}
+            </PopoverTrigger>
+            <PopoverContent width={32} textAlign={"center"}>
+              <PopoverArrow />
+              <PopoverHeader onClick={disconnectWallet}>
+                <Heading as="h4" fontSize={"lg"} cursor="pointer">
+                  Logout
+                </Heading>
+              </PopoverHeader>
+            </PopoverContent>
+          </Popover>
         </Stack>
       </Flex>
-
-      <Collapse in={isOpen} animateOpacity>
-        <MobileNav />
-      </Collapse>
     </Flex>
   );
 };
