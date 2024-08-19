@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import BannerNFT from "../../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
 
-const contractAddress = "0x319D42D48BDe4543D68266c6bADA773Ca6685B00";
+const contractAddress = "0x1ce31b93380D1cD249312b7b64e7BD9A4A218FeF";
 
 export const mintNFT = async (): Promise<void> => {
   if (!window.ethereum) {
