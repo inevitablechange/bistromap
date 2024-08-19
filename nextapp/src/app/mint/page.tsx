@@ -5,8 +5,8 @@ import { ethers } from "ethers";
 import BannerNFT from "../../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
 import BSMToken from "../../../../solidity/artifacts/contracts/BsmToken.sol/BSM.json";
 import axios from "axios";
-
-const bannerNFTAddress = "0x1ce31b93380D1cD249312b7b64e7BD9A4A218FeF";
+import abi from "@/components/abi.json";
+const bannerNFTAddress = "0x21d676bEf25F02CDeb1CBEd897f8547CCA306577";
 const bsmTokenAddress = "0x79Ae9522a82d9c30159B18C6831d6540F68811fB";
 
 const NFT_PRICE = ethers.parseUnits("2000", 18); // 2000 BSM, 18 decimals

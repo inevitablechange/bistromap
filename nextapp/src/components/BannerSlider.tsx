@@ -8,9 +8,10 @@ import Image from "next/image";
 import Link from "next/link";
 import styles from "../app/styles/BannerSlider.module.css";
 import { ethers } from "ethers";
-import BannerNFT from "../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
+import abi from "./abi.json";
+// import BannerNFT from "../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
 
-const bannerNFTAddress = "0x1ce31b93380D1cD249312b7b64e7BD9A4A218FeF";
+const bannerNFTAddress = "0x21d676bEf25F02CDeb1CBEd897f8547CCA306577";
 
 const BannerSlider: React.FC = () => {
   const [nftBanners, setNftBanners] = useState<
@@ -24,24 +25,24 @@ const BannerSlider: React.FC = () => {
 
   const fetchNFTBanners = async () => {
     if (typeof window.ethereum !== "undefined") {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(
-        bannerNFTAddress,
-        BannerNFT.abi,
-        provider
-      );
+      const provider = await new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(bannerNFTAddress, abi, signer);
 
       try {
+        console.log("contract::", contract);
         const totalSupply = await contract.totalSupply();
+        console.log({ totalSupply });
         const banners = [];
-
+        console.log(Number(totalSupply));
         for (
-          let i = totalSupply.toNumber();
-          i > totalSupply.toNumber() - 2 && i > 0;
+          let i = Number(totalSupply);
+          i > Number(totalSupply) - 2 && i > 0;
           i--
         ) {
           // 최근 2개 가져오기
           const tokenURI = await contract.tokenURI(i);
+          console.log({ tokenURI });
           const response = await fetch(tokenURI);
           const metadata = await response.json();
           banners.push({ image: metadata.image, link: metadata.description });

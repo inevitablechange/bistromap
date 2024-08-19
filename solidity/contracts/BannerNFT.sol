@@ -1,20 +1,17 @@
-    // SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: GPL-3.0
     pragma solidity >=0.8.2 <0.9.0;
 
     import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
     import "@openzeppelin/contracts/access/Ownable.sol";
-    import "./utils/Counters.sol";
     import "./BsmToken.sol"; // BSM token contract
 
     contract BannerNFT is ERC721, Ownable(msg.sender) {
-        using Counters for Counters.Counter;
-        Counters.Counter private _tokenIdCounter;
 
         BSM public BSMToken;
         uint256 public NFT_PRICE = 2000 * 1e18; // 2000 BSM
         uint256 public NFT_EXPIRATION_PERIOD = 2 weeks;
-        uint256 public MAX_SUPPLY = 5; // Initial maximum supply
-
+        uint256 public MAX_SUPPLY = 20; // Initial maximum supply
+        uint256 public supplies = 0;
         struct NFTDetails {
             uint256 mintedAt;
             bool isActive;
@@ -32,13 +29,13 @@
         }
 
         function mintNFT(string memory metadataURI) external {
-            require(_tokenIdCounter.current() < MAX_SUPPLY, "Maximum NFT supply reached");
+            require(supplies < MAX_SUPPLY, "Maximum NFT supply reached");
 
             // Transfer BSM tokens from the user to this contract
             require(BSMToken.transferFrom(msg.sender, address(this), NFT_PRICE), "BSM transfer failed");
 
-            uint256 tokenId = _tokenIdCounter.current();
-            _tokenIdCounter.increment();
+            uint256 tokenId = supplies;
+            supplies = supplies + 1;
 
             _safeMint(msg.sender, tokenId);
             nftDetails[tokenId] = NFTDetails({
@@ -86,6 +83,6 @@
         }
 
         function totalSupply() external view returns (uint256) {
-            return _tokenIdCounter.current();
+            return supplies;
         }
     }
