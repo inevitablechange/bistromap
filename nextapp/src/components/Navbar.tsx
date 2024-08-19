@@ -4,7 +4,6 @@ import {
   Box,
   Flex,
   Text,
-  IconButton,
   Button,
   Stack,
   Collapse,
@@ -15,12 +14,11 @@ import {
   useColorModeValue,
   useDisclosure,
   PopoverArrow,
-  PopoverCloseButton,
   PopoverHeader,
   Heading,
 } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -30,13 +28,13 @@ const NavBar: NextPage = () => {
   const [account, setAccount] = useState<string | null>(null);
 
   const connectWallet = async () => {
-    onOpen();
     if (typeof window.ethereum !== "undefined") {
       try {
         const accounts = await window.ethereum.request({
           method: "eth_requestAccounts",
         });
         setAccount(accounts[0]);
+        window.localStorage.setItem("loggedIn", "true");
       } catch (error) {
         console.error("Failed to connect to MetaMask:", error);
       }
@@ -48,7 +46,13 @@ const NavBar: NextPage = () => {
   const disconnectWallet = () => {
     onClose();
     setAccount(null);
+    window.localStorage.removeItem("loggedIn");
   };
+
+  useEffect(() => {
+    const isLoggedIn = !!window.localStorage.getItem("loggedIn");
+    isLoggedIn && connectWallet();
+  }, []);
   return (
     <Flex marginX={"auto"} maxWidth={"1280px"} flex={{ base: 1 }}>
       <Flex
@@ -79,18 +83,25 @@ const NavBar: NextPage = () => {
           </Button>
           <Popover isOpen={isOpen} closeOnBlur={true} closeOnEsc={true}>
             <PopoverTrigger>
-              <Button
-                colorScheme="yellow.400"
-                fontSize={14}
-                width={32}
-                onClick={connectWallet}
-              >
-                {account
-                  ? `${account.slice(0, 4)}...${account.slice(
-                      account.length - 4
-                    )}`
-                  : "Connect Wallet"}
-              </Button>
+              {account ? (
+                <Button
+                  colorScheme="yellow.400"
+                  fontSize={14}
+                  width={32}
+                  onClick={onOpen}
+                >{`${account.slice(0, 4)}...${account.slice(
+                  account.length - 4
+                )}`}</Button>
+              ) : (
+                <Button
+                  colorScheme="yellow.400"
+                  fontSize={14}
+                  width={32}
+                  onClick={connectWallet}
+                >
+                  Connect Wallet
+                </Button>
+              )}
             </PopoverTrigger>
             <PopoverContent width={32} textAlign={"center"}>
               <PopoverArrow />
