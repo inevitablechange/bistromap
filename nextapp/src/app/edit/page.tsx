@@ -1,51 +1,20 @@
 "use client";
+
 import { IoLocation } from "react-icons/io5";
 import { Button, Flex, FormControl, Input, Text } from "@chakra-ui/react";
 import { NextPage } from "next";
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import "react-quill/dist/quill.snow.css";
 import parse from "html-react-parser";
-import { GoogleMap } from "@/components/GoogleMap";
-
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
-
-const modules = {
-  toolbar: [
-    [{ header: [1, 2, false] }],
-    ["bold", "italic", "underline", "strike", "blockquote"],
-    [
-      { list: "ordered" },
-      { list: "bullet" },
-      { indent: "-1" },
-      { indent: "+1" },
-      { align: [] },
-    ],
-    ["link", "image"],
-    ["clean"],
-  ],
-};
-
-const formats = [
-  "header",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "blockquote",
-  "list",
-  "bullet",
-  "link",
-  "indent",
-  "image",
-  "code-block",
-  "color",
-];
+import GoogleMaps from "@/components/GoogleMaps";
+import QuillEditor from "@/components/QuillEditor";
 
 const Edit: NextPage = () => {
   const [title, setTitle] = useState<string>("");
   const [content, setContent] = useState<string>("");
   const [length, setLength] = useState<number>(0);
+  const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
 
   useEffect(() => {
     console.log(
@@ -53,6 +22,12 @@ const Edit: NextPage = () => {
       parse(content).props?.children.length // get length of content
     );
   }, [content]);
+
+  const handleLocationSelect = (location: string) => {
+    setSelectedLocation(location);
+    setIsMapOpen(false); // 선택 후 구글 맵 닫기
+  };
+
   return (
     <Flex
       width={"full"}
@@ -101,28 +76,29 @@ const Edit: NextPage = () => {
               required
             />
             <Flex marginY={"4"} justify="space-between">
-              <Flex paddingLeft={"14px"} align={"center"}>
+              <Button
+                paddingLeft={"14px"}
+                onClick={() => {
+                  setIsMapOpen(!isMapOpen);
+                }}
+              >
                 <IoLocation />
-                Select Location
-              </Flex>
+                {selectedLocation ? selectedLocation : "Select Location"}
+              </Button>
+              {isMapOpen && (
+                <GoogleMaps onLocationSelect={handleLocationSelect} />
+              )}
               <Text>
                 {length ? parse(content).props?.children.length : 0} letters /
                 500 letters
               </Text>
             </Flex>
-            <ReactQuill
-              placeholder="Tell us your story"
-              value={content}
-              onChange={(e) => {
-                setContent(e);
-                setLength(e.length);
-              }}
-              modules={modules}
-              formats={formats}
-              style={{ width: "100%", height: "70%" }}
+            <QuillEditor
+              content={content}
+              setContent={setContent}
+              setLength={setLength}
             />
           </FormControl>
-          <GoogleMap />
         </Flex>
       </Flex>
     </Flex>
