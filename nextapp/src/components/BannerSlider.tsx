@@ -6,17 +6,17 @@ import React, { useEffect, useState } from "react";
 import Slider from "react-slick";
 import Image from "next/image";
 import Link from "next/link";
-import { ethers } from "ethers";
-import abi from "./abi.json";
-// import BannerNFT from "../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
+import { PinataSDK, PinListItem } from "pinata";
+
 import styles from "@/app/styles/BannerSlider.module.css";
 
-const bannerNFTAddress = "0x21d676bEf25F02CDeb1CBEd897f8547CCA306577";
-
 const BannerSlider: React.FC = () => {
-  const [nftBanners, setNftBanners] = useState<
-    Array<{ image: string; link: string }>
-  >([]);
+  const pinata = new PinataSDK({
+    pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT || "",
+    pinataGateway: "pink-rapid-clownfish-409.mypinata.cloud",
+  });
+
+  const [nftBanners, setNftBanners] = useState<PinListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,32 +25,10 @@ const BannerSlider: React.FC = () => {
 
   const fetchNFTBanners = async () => {
     if (typeof window.ethereum !== "undefined") {
-      const provider = await new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(bannerNFTAddress, abi, signer);
-
       try {
-        const totalSupply = await contract.totalSupply();
-        const banners = [];
-        console.log(Number(totalSupply));
-        const tokenURI = await contract.tokenURI(1); // debugging 중...
-        console.log({ tokenURI });
-        const response = await fetch(tokenURI);
-        const metadata = await response.json();
-        banners.push({ image: metadata.image, link: metadata.description });
-        // for (
-        //   let i = Number(totalSupply);
-        //   i > Number(totalSupply) - 2 && i > 0;
-        //   i--
-        // ) {
-        //   // 최근 2개 가져오기
-        //   const tokenURI = await contract.tokenURI(i);
-        //   const response = await fetch(tokenURI);
-        //   const metadata = await response.json();
-        //   banners.push({ image: metadata.image, link: metadata.description });
-        // }
+        const data = await pinata.listFiles().pinStart("2024-07-16T11:41:19Z");
+        setNftBanners(data);
 
-        setNftBanners(banners);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching NFT banners:", error);
@@ -67,32 +45,38 @@ const BannerSlider: React.FC = () => {
     slidesToScroll: 1,
   };
 
-  const adsBanner = {
-    image: "/images/Ads.jpeg",
-    link: "/mint",
-  };
-
-  const allBanners = [...nftBanners, adsBanner];
-
   if (loading) {
     return <div>Loading...</div>;
   }
 
   return (
     <Slider {...settings} className={styles.slider}>
-      {allBanners.map((banner, index) => (
-        <div key={index}>
-          <Link href={banner.link}>
-            <Image
-              src={banner.image}
-              alt={`Banner ${index + 1}`}
-              width={900}
-              height={400}
-              layout="responsive"
-            />
-          </Link>
-        </div>
-      ))}
+      {nftBanners.map((b) => {
+        return (
+          <div key={b.ipfs_pin_hash}>
+            <Link
+              href={"https://" + b.metadata.keyvalues?.link}
+              target="_blank"
+              passHref={true}
+            >
+              <Image
+                src={`https://pink-rapid-clownfish-409.mypinata.cloud/ipfs/${b.ipfs_pin_hash}`}
+                alt={b.metadata.keyvalues?.link}
+                width={900}
+                height={400}
+              />
+            </Link>
+          </div>
+        );
+      })}
+      <Link href={"/mint"}>
+        <Image
+          src={"/images/Ads.jpeg"}
+          alt={"Available Ads"}
+          width={900}
+          height={400}
+        />
+      </Link>
     </Slider>
   );
 };
