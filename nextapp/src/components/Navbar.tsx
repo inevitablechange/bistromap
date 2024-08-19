@@ -63,7 +63,13 @@ const NavBar: NextPage = () => {
           >
             <DesktopNav />
           </Flex>
-          <Button colorScheme="chocolate.light" fontSize={14}>
+
+          <Button
+            href={"/write"}
+            as="a"
+            colorScheme="chocolate.light"
+            fontSize={14}
+          >
             Write
           </Button>
           <Popover isOpen={isOpen} closeOnBlur={true} closeOnEsc={true}>
