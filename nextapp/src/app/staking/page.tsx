@@ -153,7 +153,7 @@ const STAKING_CONTRACT_ABI = [
   },
   {
     inputs: [],
-    name: "MINIMUM_STAKE",
+    name: "MINIMUM_STAKE_AMOUNT",
     outputs: [
       {
         internalType: "uint256",
@@ -233,7 +233,7 @@ const STAKING_CONTRACT_ABI = [
     type: "function",
   },
 ];
-const STAKING_CONTRACT_ADDRESS = "0x955a45a327529d1768742F6c493aea8022d72Fd9"; // 실제 컨트랙트 주소로 교체
+const STAKING_CONTRACT_ADDRESS = "0xe0BCdC123cb6AD1D5B2Fc22880D4Ea8627FE7D60"; // 실제 컨트랙트 주소로 교체
 
 // BSM 토큰 ABI (예시, 실제 ABI로 교체 필요)
 const BSM_TOKEN_ABI = [
@@ -806,7 +806,7 @@ const BSM_TOKEN_ABI = [
 ];
 const BSM_TOKEN_ADDRESS = "0x79Ae9522a82d9c30159B18C6831d6540F68811fB"; // 실제 BSM 토큰 주소로 교체
 
-export default function SushiBar() {
+export default function BSMstake() {
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
   const [signer, setSigner] = useState<ethers.JsonRpcSigner | null>(null);
   const [stakingContract, setStakingContract] =
@@ -816,6 +816,7 @@ export default function SushiBar() {
   const [stakeAmount, setStakeAmount] = useState<string>("");
   const [reward, setReward] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [stakedAmount, setStakedAmount] = useState<number>(0);
 
   const toast = useToast();
 
@@ -827,6 +828,7 @@ export default function SushiBar() {
     if (isConnected) {
       fetchBalances();
       fetchReward();
+      fetchStakedAmount();
     }
   }, [isConnected]);
 
@@ -853,7 +855,6 @@ export default function SushiBar() {
         setBsmToken(bsmToken);
         setIsConnected(true);
 
-        // 계정 변경 이벤트 리스너
         window.ethereum.on("accountsChanged", () => {
           window.location.reload();
         });
@@ -879,7 +880,7 @@ export default function SushiBar() {
   };
 
   const fetchBalances = async () => {
-    if (signer && stakingContract && bsmToken) {
+    if (signer && bsmToken) {
       try {
         const address = await signer.getAddress();
         const BSMBalance = await bsmToken.balanceOf(address);
@@ -904,22 +905,43 @@ export default function SushiBar() {
     }
   };
 
+  const fetchStakedAmount = async () => {
+    if (signer && stakingContract) {
+      try {
+        const address = await signer.getAddress();
+        const stakedInfo = await stakingContract.stakes(address);
+        setStakedAmount(parseFloat(ethers.formatEther(stakedInfo.amount)));
+      } catch (error) {
+        console.error("Failed to fetch staked amount:", error);
+      }
+    }
+  };
+
   const handleStake = async () => {
-    if (!stakingContract || !bsmToken) return;
+    if (!stakingContract || !bsmToken || !stakeAmount) return;
     try {
       const amount = ethers.parseEther(stakeAmount);
-      const minStakeAmount = ethers.parseEther("1000");
+      const minStakeAmount = ethers.parseEther("1");
 
-      // 먼저 approve 호출
+      // Convert to BigInt for comparison
+      const minStakeAmountBigInt = BigInt(minStakeAmount.toString());
+      const amountBigInt = BigInt(amount.toString());
+
+      if (amountBigInt < minStakeAmountBigInt) {
+        throw new Error("Minimum stake amount is 1 BSM");
+      }
+
+      // Proceed with the staking process
       const approveTx = await bsmToken.approve(
         STAKING_CONTRACT_ADDRESS,
         amount
       );
       await approveTx.wait();
 
-      const tx = await stakingContract.stake(amount);
+      const tx = await stakingContract.stake(amount, { gasLimit: 300000 });
       await tx.wait();
       fetchBalances();
+      fetchStakedAmount();
       setStakeAmount("");
       toast({
         title: "Staking Successful",
@@ -946,6 +968,7 @@ export default function SushiBar() {
       const tx = await stakingContract.unstake();
       await tx.wait();
       fetchBalances();
+      fetchStakedAmount();
       toast({
         title: "Unstaking Successful",
         description: "Successfully unstaked your BSM",
@@ -969,7 +992,7 @@ export default function SushiBar() {
     <Box maxWidth="800px" margin="auto" p={4}>
       <VStack spacing={6} align="stretch">
         <HStack>
-          <Image src="/bsm-icon.png" boxSize="40px" alt="BSM icon" />
+          <Image src="/images/logo.png" boxSize="40px" alt="BSM icon" />
           <Text fontSize="3xl" fontWeight="bold" color="blue.400">
             BSM Staking
           </Text>
@@ -981,9 +1004,7 @@ export default function SushiBar() {
 
         <HStack>
           <Text>Network: Sepolia Ethereum</Text>
-          <Link color="blue.500" href="#" isExternal>
-            BSM 0x8798...4272
-          </Link>
+          <Link color="blue.500" href="#" isExternal></Link>
         </HStack>
 
         <Box borderWidth={1} borderRadius="md" p={4}>
@@ -991,7 +1012,7 @@ export default function SushiBar() {
             Minimum Stake Requirement
           </Text>
           <Text color="red.500">
-            To participate, you need at least 1000 BSM.
+            To participate Voting, you need at least 1000 BSM.
           </Text>
         </Box>
 
@@ -1004,7 +1025,11 @@ export default function SushiBar() {
               Manage your position in the BSM Staking contract.
             </Text>
             <HStack mb={4}>
-              <Button flex={1} onClick={handleStake}>
+              <Button
+                flex={1}
+                onClick={handleStake}
+                isDisabled={!stakeAmount || parseFloat(stakeAmount) < 1}
+              >
                 Stake
               </Button>
               <Button flex={1} variant="outline" onClick={handleUnstake}>
@@ -1014,19 +1039,17 @@ export default function SushiBar() {
             <Box borderWidth={1} borderRadius="md" p={4}>
               <Text mb={2}>Stake</Text>
               <Text color="blue.500" mb={2}>
-                1 BSM ($0.56) = 1 BSM Staked
+                1 BSM ($1.00)
               </Text>
               <HStack mb={2}>
                 <Input
                   placeholder="0.0"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
+                  type="number"
+                  min="1"
                 />
                 <Text>BSM</Text>
-              </HStack>
-              <HStack>
-                <Input placeholder="0.0" isReadOnly value={stakeAmount} />
-                <Text>BSM Staked</Text>
               </HStack>
             </Box>
           </Box>
@@ -1038,34 +1061,42 @@ export default function SushiBar() {
               <Box>
                 <Text>Available</Text>
                 <HStack>
-                  <Image src="/bsm-icon.png" boxSize="20px" alt="BSM icon" />
+                  <Image src="/images/logo.png" boxSize="20px" alt="BSM icon" />
                   <Text>BSM</Text>
                   <Spacer />
                   <Text>
-                    {balance.BSM} ${(balance.BSM * 0.56).toFixed(2)}
+                    {balance.BSM} ${balance.BSM.toFixed(2)}
                   </Text>
                 </HStack>
               </Box>
               <Box>
                 <Text>Staked</Text>
                 <HStack>
-                  <Image src="/bsm-icon.png" boxSize="20px" alt="BSM icon" />
+                  <Image
+                    src="/images/logo2.png"
+                    boxSize="20px"
+                    alt="BSM icon"
+                  />
                   <Text>BSM</Text>
                   <Spacer />
-                  <Text>0.0</Text>
+                  <Text>
+                    {stakedAmount.toFixed(2)} ${stakedAmount.toFixed(2)}
+                  </Text>
                 </HStack>
               </Box>
               <Box>
                 <Text>Rewards</Text>
                 <HStack>
                   <Image
-                    src="/reward-icon.png"
+                    src="/images/logo.png"
                     boxSize="20px"
                     alt="Reward icon"
                   />
                   <Text>BSM</Text>
                   <Spacer />
-                  <Text>{reward.toFixed(2)}</Text>
+                  <Text>
+                    {reward.toFixed(2)} ${reward.toFixed(2)}
+                  </Text>
                 </HStack>
               </Box>
             </VStack>
