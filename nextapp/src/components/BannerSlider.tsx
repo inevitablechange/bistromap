@@ -1,16 +1,20 @@
 "use client";
-
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import React, { useEffect, useState } from "react";
-import Slider from "react-slick";
-import Image from "next/image";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
 import { PinataSDK, PinListItem } from "pinata";
+import { A11y, Navigation, Pagination, Scrollbar } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import "swiper/css/scrollbar";
+import { Box, Flex } from "@chakra-ui/react";
 
-import styles from "@/app/styles/BannerSlider.module.css";
+interface BannerSliderProps {
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>;
+}
 
-const BannerSlider: React.FC = () => {
+const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
   const pinata = new PinataSDK({
     pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT || "",
     pinataGateway: "pink-rapid-clownfish-409.mypinata.cloud",
@@ -37,12 +41,8 @@ const BannerSlider: React.FC = () => {
     }
   };
 
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
+  const handleClick = () => {
+    setIsModalOpen(true);
   };
 
   if (loading) {
@@ -50,34 +50,71 @@ const BannerSlider: React.FC = () => {
   }
 
   return (
-    <Slider {...settings} className={styles.slider}>
-      {nftBanners.map((b) => {
-        return (
-          <div key={b.ipfs_pin_hash}>
-            <Link
-              href={"https://" + b.metadata.keyvalues?.link}
-              target="_blank"
-              passHref={true}
-            >
-              <Image
-                src={`https://pink-rapid-clownfish-409.mypinata.cloud/ipfs/${b.ipfs_pin_hash}`}
-                alt={b.metadata.keyvalues?.link}
-                width={900}
+    <Swiper
+      modules={[Pagination, Navigation, Scrollbar, A11y]}
+      slidesPerView={1}
+      navigation
+      pagination={{ clickable: true }}
+      scrollbar={{ draggable: true }}
+      onSwiper={(swiper) => console.log(swiper)}
+      onSlideChange={() => console.log("slide change")}
+    >
+      {nftBanners.map((banner) => (
+        <SwiperSlide key={banner.ipfs_pin_hash}>
+          <Flex>
+            <Link href={banner.metadata.keyvalues?.link}>
+              <img
+                src={`https://pink-rapid-clownfish-409.mypinata.cloud/ipfs/${banner.ipfs_pin_hash}`}
+                alt={banner.metadata.keyvalues?.link}
+                width={"100%"}
                 height={400}
               />
             </Link>
-          </div>
-        );
-      })}
-      <Link href={"/mint"}>
-        <Image
-          src={"/images/Ads.jpeg"}
-          alt={"Available Ads"}
-          width={900}
-          height={400}
-        />
-      </Link>
-    </Slider>
+          </Flex>
+        </SwiperSlide>
+      ))}
+      <SwiperSlide>
+        <Box
+          style={{
+            display: "block",
+            position: "relative",
+            width: "100%",
+            height: "400px",
+          }}
+        >
+          <img
+            src={"/assets/bg-banner.png"}
+            alt={"Available Ads"}
+            width={"100%"}
+            height={"auto"}
+            style={{ position: "absolute" }}
+          />
+          <Box
+            position="absolute"
+            left={"50%"}
+            transform={"translateX(-50%)"}
+            mt="140px"
+            fontSize={"lg"}
+            fontWeight={700}
+            textColor={"white"}
+            borderRadius={6}
+            padding={6}
+            bgColor={"#1D211A40"}
+          >
+            Ads Banner Available Here
+            <br />
+            Click &nbsp;
+            <span
+              style={{ cursor: "pointer", color: "#F3CD00", fontSize: 24 }}
+              onClick={handleClick}
+            >
+              <i>here</i>
+            </span>
+            &nbsp; and make your business accessible to users
+          </Box>
+        </Box>
+      </SwiperSlide>
+    </Swiper>
   );
 };
 
