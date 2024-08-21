@@ -1,6 +1,12 @@
 import React, { FC, useRef, useState, useEffect } from "react";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 import { Button, Flex, Input } from "@chakra-ui/react";
+import { useFormContext } from "react-hook-form";
+
+interface Location {
+  lng: number;
+  lat: number;
+}
 
 const containerStyle = {
   width: "100%",
@@ -25,6 +31,8 @@ const GoogleMaps: FC<GoogleMapsProps> = ({ onLocationSelect }) => {
   const searchBoxRef = useRef<any>(null);
   const autocompleteRef = useRef<any>(null);
 
+  const { register, setValue } = useFormContext();
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!, // API 키 입력
@@ -39,10 +47,15 @@ const GoogleMaps: FC<GoogleMapsProps> = ({ onLocationSelect }) => {
     mapRef.current = null;
   };
 
+  const setLocationValue = ({ lat, lng }: Location) => {
+    setValue("location.lat", lat);
+    setValue("location.lng", lng);
+  };
+
   const handleMapClick = async (event: any) => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
-
+    setLocationValue({ lat, lng });
     // Google Geocoding API를 사용하여 클릭한 좌표의 주소 가져오기
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
@@ -75,6 +88,7 @@ const GoogleMaps: FC<GoogleMapsProps> = ({ onLocationSelect }) => {
           const placeName = results[0].name; // 검색된 장소 이름
 
           // 지도 중심을 검색된 장소의 좌표로 이동
+          setLocationValue({ lat: location.lat(), lng: location.lng() });
           setMapCenter({
             lat: location.lat(),
             lng: location.lng(),
@@ -147,6 +161,7 @@ const GoogleMaps: FC<GoogleMapsProps> = ({ onLocationSelect }) => {
         onUnmount={onUnmount}
         onClick={handleMapClick}
       >
+        <input type="text" {...register("location")} />
         {/* Marker 표시 */}
         {markerPosition && (
           <Marker

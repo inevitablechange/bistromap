@@ -57,7 +57,7 @@ const QuillEditor: NextPage<QuillEditorInterface> = ({
       }}
       modules={modules}
       formats={formats}
-      style={{ width: "100%", height: "85%" }}
+      // style={{ fontSize: 6 }}
     />
   );
 };
