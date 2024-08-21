@@ -6,12 +6,7 @@ import { Stack, HStack, VStack, Link, Flex } from "@chakra-ui/react";
 
 const Footer: NextPage = () => {
   return (
-    <Flex
-      bgColor="gray.200"
-      p={{ base: 5, md: 8 }}
-      w="100%"
-      justifyContent="center"
-    >
+    <Flex p={{ base: 5, md: 8 }} w="100%" justifyContent="center">
       <Stack
         w={1280}
         px={8}

@@ -1,19 +1,23 @@
+import { BrowserProvider, JsonRpcSigner, ethers } from "ethers";
 import { useState } from "react";
 
 export const useAccountProvider = (): [
+  BrowserProvider | null,
+  JsonRpcSigner | null,
   string | null,
   () => Promise<void>,
   () => void
 ] => {
   const [account, setAccount] = useState<string | null>(null);
+  const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
 
   const connectWallet = async () => {
     if (typeof window.ethereum !== "undefined") {
       try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        setAccount(accounts[0]);
+        setProvider(new ethers.BrowserProvider(window.ethereum));
+        setSigner(await provider!.getSigner());
+        setAccount(signer!.address);
         window.localStorage.setItem("loggedIn", "true");
       } catch (error) {
         console.error("Failed to connect to MetaMask:", error);
@@ -26,5 +30,5 @@ export const useAccountProvider = (): [
     setAccount(null);
     window.localStorage.removeItem("loggedIn");
   };
-  return [account, connectWallet, disconnectWallet];
+  return [provider, signer, account, connectWallet, disconnectWallet];
 };
