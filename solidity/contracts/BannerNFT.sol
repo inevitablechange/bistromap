@@ -1,88 +1,103 @@
 // SPDX-License-Identifier: GPL-3.0
-    pragma solidity >=0.8.2 <0.9.0;
+pragma solidity >=0.8.2 <0.9.0;
 
-    import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-    import "@openzeppelin/contracts/access/Ownable.sol";
-    import "./BsmToken.sol"; // BSM token contract
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "./BsmToken.sol"; // BSM token contract
 
-    contract BannerNFT is ERC721, Ownable(msg.sender) {
+contract BannerNFT is ERC721URIStorage, Ownable(msg.sender) {
 
-        BSM public BSMToken;
-        uint256 public NFT_PRICE = 2000 * 1e18; // 2000 BSM
-        uint256 public NFT_EXPIRATION_PERIOD = 2 weeks;
-        uint256 public MAX_SUPPLY = 20; // Initial maximum supply
-        uint256 public supplies = 0;
-        struct NFTDetails {
-            uint256 mintedAt;
-            bool isActive;
-            string metadataURI; // 메타데이터 URL을 저장하는 필드 추가
-        }
+    
+    BSM public BSMToken;
+    uint256 public NFT_PRICE = 2000 * 1e18; // 2000 BSM
+    uint256 public NFT_EXPIRATION_PERIOD = 2 weeks;
+    uint256 public MAX_SUPPLY = 20; // Initial maximum supply
+    uint256 public supplies = 0;
 
-        mapping(uint256 => NFTDetails) public nftDetails;
+    struct NFTDetails {
+        uint256 mintedAt;
+        bool isActive;
+    }
 
-        event NFTMinted(address indexed to, uint256 indexed tokenId);
-        event FundsWithdrawn(address indexed to, uint256 amount);
-        event MaxSupplyUpdated(uint256 newMaxSupply); // Event for max supply update
+    mapping(uint256 => NFTDetails) public nftDetails;
 
-        constructor(address _BSMToken) ERC721("BannerNFT", "BNFT") {
-            BSMToken = BSM(_BSMToken);
-        }
+    event NFTMinted(address indexed to, uint256 indexed tokenId);
+    event FundsWithdrawn(address indexed to, uint256 amount);
+    event MaxSupplyUpdated(uint256 newMaxSupply);
 
-        function mintNFT(string memory metadataURI) external {
-            require(supplies < MAX_SUPPLY, "Maximum NFT supply reached");
+    constructor(address _BSMToken) ERC721("BannerNFT", "BNFT") {
+        BSMToken = BSM(_BSMToken);
+    }
 
-            // Transfer BSM tokens from the user to this contract
-            require(BSMToken.transferFrom(msg.sender, address(this), NFT_PRICE), "BSM transfer failed");
+    function mintNFT(string memory metadataURI) external {
+        require(supplies < MAX_SUPPLY, "Maximum NFT supply reached");
 
-            uint256 tokenId = supplies;
-            supplies = supplies + 1;
+        // Transfer BSM tokens from the user to this contract
+        require(BSMToken.transferFrom(msg.sender, address(this), NFT_PRICE), "BSM transfer failed");
 
-            _safeMint(msg.sender, tokenId);
-            nftDetails[tokenId] = NFTDetails({
-                mintedAt: block.timestamp,
-                isActive: true,
-                metadataURI: metadataURI
-            });
+        uint256 tokenId = supplies;
+        supplies = supplies + 1;
 
-            emit NFTMinted(msg.sender, tokenId);
-        }
+        _safeMint(msg.sender, tokenId);
+        _setTokenURI(tokenId, metadataURI);  // Set metadata URI
 
-        function transferNFT(address to, uint256 tokenId) external {
-            address owner = ownerOf(tokenId);
-            require(owner == _msgSender() || getApproved(tokenId) == _msgSender(), "ERC721: transfer caller is not owner nor approved");
-            require(nftDetails[tokenId].isActive, "NFT has expired or is inactive");
+        nftDetails[tokenId] = NFTDetails({
+            mintedAt: block.timestamp,
+            isActive: true
+        });
 
-            if (block.timestamp >= nftDetails[tokenId].mintedAt + NFT_EXPIRATION_PERIOD) {
-                nftDetails[tokenId].isActive = false;
-            }
+        emit NFTMinted(msg.sender, tokenId);
+    }
 
-            _safeTransfer(owner, to, tokenId, "");
-        }
+    function transferNFT(address to, uint256 tokenId) external {
+        address owner = ownerOf(tokenId);
+        require(owner == _msgSender() || getApproved(tokenId) == _msgSender(), "ERC721: transfer caller is not owner nor approved");
+        require(nftDetails[tokenId].isActive, "NFT has expired or is inactive");
 
-        function checkNFTStatus(uint256 tokenId) external view returns (bool) {
-            if (nftDetails[tokenId].mintedAt == 0) return false;
-            return block.timestamp < nftDetails[tokenId].mintedAt + NFT_EXPIRATION_PERIOD && nftDetails[tokenId].isActive;
-        }
-
-        function deactivateExpiredNFT(uint256 tokenId) external {
-            require(nftDetails[tokenId].mintedAt != 0, "NFT does not exist");
-            require(block.timestamp >= nftDetails[tokenId].mintedAt + NFT_EXPIRATION_PERIOD, "NFT has not expired yet");
+        if (block.timestamp >= nftDetails[tokenId].mintedAt + NFT_EXPIRATION_PERIOD) {
             nftDetails[tokenId].isActive = false;
         }
 
-        function withdrawFunds(address to, uint256 amount) external onlyOwner {
-            require(amount <= BSMToken.balanceOf(address(this)), "Insufficient funds");
-            require(BSMToken.transfer(to, amount), "BSM transfer failed");
-            emit FundsWithdrawn(to, amount);
-        }
-
-        // Function to update the maximum supply for testing purposes
-        function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
-            MAX_SUPPLY = newMaxSupply;
-            emit MaxSupplyUpdated(newMaxSupply);
-        }
-
-        function totalSupply() external view returns (uint256) {
-            return supplies;
-        }
+        _safeTransfer(owner, to, tokenId, "");
     }
+
+    function checkNFTStatus(uint256 tokenId) external view returns (bool) {
+        if (nftDetails[tokenId].mintedAt == 0) return false;
+        return block.timestamp < nftDetails[tokenId].mintedAt + NFT_EXPIRATION_PERIOD && nftDetails[tokenId].isActive;
+    }
+
+    function deactivateExpiredNFT(uint256 tokenId) external {
+        require(nftDetails[tokenId].mintedAt != 0, "NFT does not exist");
+        require(block.timestamp >= nftDetails[tokenId].mintedAt + NFT_EXPIRATION_PERIOD, "NFT has not expired yet");
+        nftDetails[tokenId].isActive = false;
+    }
+
+    function withdrawFunds(address to, uint256 amount) external onlyOwner {
+        require(amount <= BSMToken.balanceOf(address(this)), "Insufficient funds");
+        require(BSMToken.transfer(to, amount), "BSM transfer failed");
+        emit FundsWithdrawn(to, amount);
+    }
+
+    function setMaxSupply(uint256 newMaxSupply) external onlyOwner {
+        MAX_SUPPLY = newMaxSupply;
+        emit MaxSupplyUpdated(newMaxSupply);
+    }
+
+    function totalSupply() external view returns (uint256) {
+        return supplies;
+    }
+
+    // Directly check existence of token
+    function _exists(uint256 tokenId) internal view returns (bool) {
+        return _exists(tokenId);
+    }
+
+    // Override tokenURI to use ERC721URIStorage's implementation
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        // Check if token exists
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        // Return the token URI
+        return super.tokenURI(tokenId);
+    }
+}
