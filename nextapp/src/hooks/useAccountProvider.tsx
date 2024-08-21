@@ -13,17 +13,20 @@ export const useAccountProvider = (): [
   const [signer, setSigner] = useState<JsonRpcSigner | null>(null);
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== "undefined") {
-      try {
-        setProvider(new ethers.BrowserProvider(window.ethereum));
-        setSigner(await provider!.getSigner());
-        setAccount(signer!.address);
-        window.localStorage.setItem("loggedIn", "true");
-      } catch (error) {
-        console.error("Failed to connect to MetaMask:", error);
-      }
-    } else {
-      console.log("MetaMask is not installed");
+    if (!window.ethereum) return;
+    try {
+      const newProvider = new ethers.BrowserProvider(window.ethereum);
+      setProvider(newProvider);
+
+      const newSigner = await newProvider.getSigner();
+      setSigner(newSigner);
+
+      const address = await newSigner.getAddress();
+      setAccount(address);
+
+      window.localStorage.setItem("loggedIn", "true");
+    } catch (error) {
+      console.error("Failed to connect to MetaMask:", error);
     }
   };
   const disconnectWallet = () => {

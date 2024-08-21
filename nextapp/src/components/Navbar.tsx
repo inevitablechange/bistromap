@@ -33,9 +33,9 @@ const NavBar: NextPage = () => {
   };
 
   useEffect(() => {
-    if (!connectWallet || typeof connectWallet != "function") return;
-    const isLoggedIn = !!window.localStorage.getItem("loggedIn");
-    isLoggedIn && connectWallet();
+    if (localStorage.getItem("loggedIn") === "true") {
+      connectWallet();
+    }
   }, []);
 
   return (
