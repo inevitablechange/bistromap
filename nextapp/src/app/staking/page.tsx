@@ -817,6 +817,8 @@ export default function BSMstake() {
   const [reward, setReward] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [stakedAmount, setStakedAmount] = useState<number>(0);
+  const [stakedTimestamp, setStakedTimestamp] = useState<number>(0);
+  const [canUnstake, setCanUnstake] = useState<boolean>(false);
 
   const toast = useToast();
 
@@ -828,7 +830,7 @@ export default function BSMstake() {
     if (isConnected) {
       fetchBalances();
       fetchReward();
-      fetchStakedAmount();
+      fetchStakedInfo();
     }
   }, [isConnected]);
 
@@ -905,14 +907,21 @@ export default function BSMstake() {
     }
   };
 
-  const fetchStakedAmount = async () => {
+  const fetchStakedInfo = async () => {
     if (signer && stakingContract) {
       try {
         const address = await signer.getAddress();
         const stakedInfo = await stakingContract.stakes(address);
         setStakedAmount(parseFloat(ethers.formatEther(stakedInfo.amount)));
+        setStakedTimestamp(stakedInfo.timestamp.toNumber());
+
+        // Calculate if the user can unstake
+        const canUnstake =
+          block.timestamp >=
+          stakedInfo.timestamp.toNumber() + 24 * 7 * 24 * 60 * 60; // 24 weeks in seconds
+        setCanUnstake(canUnstake);
       } catch (error) {
-        console.error("Failed to fetch staked amount:", error);
+        console.error("Failed to fetch staked information:", error);
       }
     }
   };
@@ -941,7 +950,7 @@ export default function BSMstake() {
       const tx = await stakingContract.stake(amount, { gasLimit: 300000 });
       await tx.wait();
       fetchBalances();
-      fetchStakedAmount();
+      fetchStakedInfo();
       setStakeAmount("");
       toast({
         title: "Staking Successful",
@@ -963,12 +972,12 @@ export default function BSMstake() {
   };
 
   const handleUnstake = async () => {
-    if (!stakingContract) return;
+    if (!stakingContract || !canUnstake) return;
     try {
       const tx = await stakingContract.unstake();
       await tx.wait();
       fetchBalances();
-      fetchStakedAmount();
+      fetchStakedInfo();
       toast({
         title: "Unstaking Successful",
         description: "Successfully unstaked your BSM",
@@ -986,6 +995,21 @@ export default function BSMstake() {
         isClosable: true,
       });
     }
+  };
+
+  // Function to format the remaining time in a readable format
+  const formatRemainingTime = (timestamp: number) => {
+    const now = Math.floor(Date.now() / 1000);
+    const remainingSeconds = Math.max(
+      timestamp + 24 * 7 * 24 * 60 * 60 - now,
+      0
+    );
+    const days = Math.floor(remainingSeconds / (24 * 60 * 60));
+    const hours = Math.floor((remainingSeconds % (24 * 60 * 60)) / (60 * 60));
+    const minutes = Math.floor((remainingSeconds % (60 * 60)) / 60);
+    const seconds = remainingSeconds % 60;
+
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   };
 
   return (
@@ -1014,6 +1038,9 @@ export default function BSMstake() {
           <Text color="red.500">
             To participate Voting, you need at least 1000 BSM.
           </Text>
+          <Text color="red.500">
+            Staking can only be unstaked after at least 24 weeks.
+          </Text>
         </Box>
 
         <Flex>
@@ -1032,7 +1059,12 @@ export default function BSMstake() {
               >
                 Stake
               </Button>
-              <Button flex={1} variant="outline" onClick={handleUnstake}>
+              <Button
+                flex={1}
+                variant="outline"
+                onClick={handleUnstake}
+                isDisabled={!canUnstake}
+              >
                 Unstake
               </Button>
             </HStack>
