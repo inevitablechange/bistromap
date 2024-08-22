@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import BannerNFT from "../../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
-import BSMToken from "../../../../solidity/artifacts/contracts/BsmToken.sol/BSM.json";
 import axios from "axios";
 import {
   Box,
@@ -17,9 +16,9 @@ import {
 } from "@chakra-ui/react";
 import { useAccount } from "@/context/AccountContext";
 import { redirect } from "next/navigation";
-
+import { bsmContractAddress } from "@/constants";
+import bsmABI from "@/abi/BsmToken.json";
 const bannerNFTAddress = "0xA6677DD9FcD2FD71085f199455a121caaeE69853";
-const bsmTokenAddress = "0x79Ae9522a82d9c30159B18C6831d6540F68811fB";
 
 const NFT_PRICE = ethers.parseUnits("2000", 18); // 2000 BSM, 18 decimals
 
@@ -97,11 +96,7 @@ const MintPage: React.FC = () => {
       BannerNFT.abi,
       signer
     );
-    const bsmContract = new ethers.Contract(
-      bsmTokenAddress,
-      BSMToken.abi,
-      signer
-    );
+    const bsmContract = new ethers.Contract(bsmContractAddress, bsmABI, signer);
 
     try {
       setLoading(true);

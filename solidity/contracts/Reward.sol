@@ -1,15 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >= 0.8.2 < 0.9.0;
+
 import "./BsmToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/DateChecker.sol";
+import "./Staking.sol"; // 스테이킹 컨트랙트 import
+
+interface IStakingContract {
+    struct Stake {
+        uint256 amount;
+        uint256 timestamp;
+        uint256 lastClaimTimestamp;
+    }
+    function getStakeDetails(address staker) external view returns (Stake memory);
+}
 
 contract Reward {
-    BSM public bistroToken;   
-    DateChecker dateChecker;
+    BSM public bistroToken;
+    DateChecker public dateChecker;
+    IStakingContract public stakingContract; // 스테이킹 컨트랙트 인터페이스
+
     struct Attendance { // 출석체크
-        uint[] dates; // timestamp 의 어레이
-        uint consecutive; // 연속 출석한 날짜. 연속 실패시 0으로 리셋
+        uint[] dates;
+        uint8 consecutive;
     }
     struct Review {
         address writer; // 글쓴이
@@ -23,21 +36,26 @@ contract Reward {
         bool expired; // 집계가 끝났는지 여부
     }
 
-    mapping(uint => Review) public reviews; // ID로 리뷰 검색
-    mapping(address => Attendance) public  userAttendance; // address로 유저의 출석 검색
-    mapping(address => uint[]) userVotedFor;
-    uint public constant BSM_DECIMALS = 10 ** 18; // 18 decimals for BSM
-    uint public constant VOTE_COST = 3 * BSM_DECIMALS; // 투표 시 지급해야할 3 BSM
-    uint public constant REWARDS_FOR = 5; // 상위 5개 리뷰를 작성한 리뷰어에게 보상 지급
+   mapping(uint => Review) public reviews;
+    mapping(address => Attendance) public userAttendance;
+    mapping(address => uint[]) public userVotedFor;
+
+    uint public constant BSM_DECIMALS = 10 ** 18;
+    uint public constant VOTE_COST = 3 * BSM_DECIMALS;
+    uint public constant REWARDS_FOR = 5;
     uint public lastReviewNumbers;
     uint public reviewNumbers;
     uint public lastRewardAt;
 
     event Published(address indexed user, uint256 reviewNumber);
+    event Voted(address indexed user, uint256 reviewNumber);
+    event AttendanceMarked(address indexed user, uint256 timestamp);
 
-    constructor(address _bistroTokenAddress) {
+    constructor(address _bistroTokenAddress, address _stakingContractAddress, address _dateCheckerContractAddress) {
         bistroToken = BSM(_bistroTokenAddress);
-        lastRewardAt = block.timestamp; // 초기화
+        stakingContract = IStakingContract(_stakingContractAddress);
+        dateChecker = DateChecker(_dateCheckerContractAddress);
+        lastRewardAt = block.timestamp;
     }
 
     fallback() external {}
@@ -118,43 +136,49 @@ contract Reward {
 
         emit Published(msg.sender, reviewNumbers);
     }
-    
-    event Voted(address indexed user, uint256 reviewNumber);
 
-    function vote(uint serialNumber) public { // staking 1000 bsm require 조건 필요
-        Review storage rv = reviews[serialNumber];
-        require(rv.writer != msg.sender, "Voter can't vote for the her or his review.");
-        require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
-        rv.votes = rv.votes + 1;
-        reviews[serialNumber].votedBy.push(msg.sender);
-
-        emit Voted(msg.sender, serialNumber);
-
-        userVotedFor[msg.sender].push(serialNumber);
-    }
-
-    event AttendanceMarked(address indexed user, uint256 timestamp);
-
-    function markAttendance() public { // 고쳐야함.
+      function markAttendance() public {
         uint[] storage calendar = userAttendance[msg.sender].dates;
-        require(dateChecker.isToday(block.timestamp) == false, "Today's attendance checked");
-        userAttendance[msg.sender].dates.push(block.timestamp);
-        if (calendar.length == 0) {
-            calendar.push(block.timestamp);
-        } else if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) { // 마지막 날짜가 오늘이면 안되고 반드시 어제어야 함
-            userAttendance[msg.sender].consecutive++;
-        } else {
-            userAttendance[msg.sender].consecutive = 0;
+        
+        if (calendar.length >= 1 ) {
+            require(dateChecker.isToday(calendar[calendar.length - 1]) == false, "Today's attendance checked");
         }
+
+
+        // 스테이킹 여부 확인
+        require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
+
+        userAttendance[msg.sender].dates.push(block.timestamp);
+        if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) {
+            userAttendance[msg.sender].consecutive += 1;
+        } else {
+            userAttendance[msg.sender].consecutive = 1;
+        }
+
         uint attendanceReward = BSM_DECIMALS / 10;
         if (userAttendance[msg.sender].consecutive == 28) {
             attendanceReward += BSM_DECIMALS;
             userAttendance[msg.sender].consecutive = 0;
         } else if (userAttendance[msg.sender].consecutive == 7 || userAttendance[msg.sender].consecutive == 14 || userAttendance[msg.sender].consecutive == 21) {
-            attendanceReward += BSM_DECIMALS * 3 / 10 ;
+            attendanceReward += BSM_DECIMALS * 3 / 10;
         }
 
         bistroToken.mint(msg.sender, attendanceReward);
         emit AttendanceMarked(msg.sender, block.timestamp);
+    }
+
+    function vote(uint serialNumber) public {
+        Review storage rv = reviews[serialNumber];
+        require(rv.writer != msg.sender, "Voter can't vote for the her or his review.");
+
+        // 스테이킹 여부 확인
+        require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
+
+        require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
+        rv.votes = rv.votes + 1;
+        reviews[serialNumber].votedBy.push(msg.sender);
+
+        emit Voted(msg.sender, serialNumber);
+        userVotedFor[msg.sender].push(serialNumber);
     }
 }

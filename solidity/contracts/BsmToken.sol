@@ -18,17 +18,41 @@ contract BSM is ERC20, Ownable(msg.sender) {
     uint public privateSalesStart;
     uint public privateSalesDuring = 2 weeks;
     uint public privateSalesRelease;
+    mapping(address => bool) private _minters;
     mapping(address => uint256) private privateSaleBalances;
     mapping(address => uint256) private _released;
     address[] beneficiaries;
     
     constructor(uint _privateSalesStart) ERC20("Bistro", "BSM") {
+        _minters[msg.sender] = true;
         _mint(address(this), _initialSupply); // Mint initial supply to the contract itself
         privateSaleAmount = _initialSupply; // All tokens are allocated for private sale initially
         privateSalesStart = _privateSalesStart;
     }
     
-    function mint(address to, uint256 amount) public {
+
+
+    modifier onlyMinter() {
+        require(_minters[msg.sender], "Caller is not a minter");
+        _;
+    }
+
+        // Only the owner can add new minters
+    function addMinter(address minter) public onlyOwner {
+        _minters[minter] = true;
+    }
+
+       // Only the owner can remove minters
+    function removeMinter(address minter) public onlyOwner {
+        _minters[minter] = false;
+    }
+
+    // You can call this function to check the current owner
+    function whoIsOwner() public view returns (address) {
+        return owner();
+    }
+
+    function mint(address to, uint256 amount) public onlyMinter {
         _mint(to, amount);
     }
     

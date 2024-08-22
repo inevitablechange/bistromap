@@ -213,6 +213,10 @@ const NAV_ITEMS: Array<NavItem> = [
     href: "/staking", // 스테이킹 페이지로 이동하도록 href 설정
   },
   {
+    label: "Mission",
+    href: "/attendance",
+  },
+  {
     label: "Reviews",
     href: "/reviews",
   },
