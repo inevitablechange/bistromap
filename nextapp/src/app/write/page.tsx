@@ -6,13 +6,14 @@ import { NextPage } from "next";
 import { useForm, FormProvider } from "react-hook-form";
 import { useState } from "react";
 import "react-quill/dist/quill.snow.css";
-import parse from "html-react-parser";
+import { rewardContractAddress } from "@/constants";
 import GoogleMaps from "@/components/GoogleMaps";
 import QuillEditor from "@/components/QuillEditor";
 import { useAccount } from "@/context/AccountContext";
+import rewardAbi from "@/abis/reward.json";
+import { ethers } from "ethers";
 
 const Edit: NextPage = () => {
-  const [title, setTitle] = useState<string>("");
   const [content, setContent] = useState<string>("");
   const [length, setLength] = useState<number>(0);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
@@ -31,11 +32,23 @@ const Edit: NextPage = () => {
     setIsMapOpen(false); // 선택 후 구글 맵 닫기
   };
 
-  function onSubmit(values: any) {
+  async function onSubmit(values: any) {
+    // create
     console.log(values);
     const form = values;
     form.content = content;
-    console.log({ form });
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const rewardContract = new ethers.Contract(
+      rewardContractAddress,
+      rewardAbi,
+      signer
+    );
+    const lng = form.lng * Math.pow(10, 6);
+    const lat = form.lat * Math.pow(10, 6);
+    const base64Html = Buffer.from(form.content).toString("base64");
+    // ethereum network에 publish.
+    rewardContract.publish(form.title, form.place, base64Html, lng, lat);
   }
   return (
     <Box w={"100%"} bgColor="yellow.100" height="calc(100vh - 60px)">
@@ -95,7 +108,6 @@ const Edit: NextPage = () => {
                         message: "Minimum length should be 4",
                       },
                     })}
-                    onChange={(e) => setTitle(e.target.value)}
                     required
                   />
                 </FormControl>
@@ -123,10 +135,13 @@ const Edit: NextPage = () => {
                   {isMapOpen && (
                     <GoogleMaps onLocationSelect={handleLocationSelect} />
                   )}
-                  <Text>
-                    {length ? parse(content).props?.children.length : 0} letters
-                    / minimum 500 letters
-                  </Text>
+                  <Flex>
+                    <Text color={length < 500 ? "red" : "gray.800"}>
+                      {" "}
+                      {length ? length : "0"} letters{" "}
+                    </Text>
+                    &nbsp;/ minimum 500 letters
+                  </Flex>
                 </Flex>
                 <QuillEditor
                   content={content}

@@ -26,13 +26,15 @@ contract Reward {
     }
     struct Review {
         address writer; // 글쓴이
+        string title; // 제목
+        string content; // 내용 
         uint serialNumber; // 일련번호(ID)
         uint votes; // 받은 투표 수
         address[] votedBy; // 투표한 계정 목록
         uint publishedAt; // publish 날짜
         string restaurant; // 레스토랑 이름
-        uint longitude; // 경도
-        uint latitude; // 위도
+        int32 longitude; // 경도
+        int32 latitude; // 위도
         bool expired; // 집계가 끝났는지 여부
     }
 
@@ -40,9 +42,10 @@ contract Reward {
     mapping(address => Attendance) public userAttendance;
     mapping(address => uint[]) public userVotedFor;
 
-    uint public constant BSM_DECIMALS = 10 ** 18;
-    uint public constant VOTE_COST = 3 * BSM_DECIMALS;
-    uint public constant REWARDS_FOR = 5;
+    mapping(address => Review[]) public reviewsPerAccount; // account가 작성한 리뷰 검색
+    uint public constant BSM_DECIMALS = 10 ** 18; // 18 decimals for BSM
+    uint public constant VOTE_COST = 3 * BSM_DECIMALS; // 투표 시 지급해야할 3 BSM
+    uint public constant REWARDS_FOR = 5; // 상위 5개 리뷰를 작성한 리뷰어에게 보상 지급
     uint public lastReviewNumbers;
     uint public reviewNumbers;
     uint public lastRewardAt;
@@ -120,12 +123,14 @@ contract Reward {
         lastReviewNumbers = reviewNumbers;
     }
 
-    function publish(string memory restaurant, uint longitude, uint latitude) public {
-        // 1000자 이상, 사진은 추후 추가.
+    function publish(string memory title, string memory restaurant, string memory content, int32 longitude, int32 latitude) public {
+        // 500자 이상,
         uint serialNumber = reviewNumbers + 1;
         Review memory review;
         review.writer = msg.sender;
         review.serialNumber = serialNumber;
+        review.title = title;
+        review.content = content;
         review.votes = 0;
         review.publishedAt = block.timestamp;
         review.restaurant = restaurant;
@@ -133,8 +138,39 @@ contract Reward {
         review.latitude = latitude;
 
         reviews[serialNumber] = review; // mapping
+        reviewsPerAccount[msg.sender].push(review);
 
         emit Published(msg.sender, reviewNumbers);
+    }
+
+    function getReviewsWrittenBySender() public view returns(Review[] memory) {
+        return reviewsPerAccount[msg.sender];
+    } 
+    function getReview(uint serialNumber) public view returns (
+        address writer,
+        string memory title,
+        string memory content,
+        uint votes,
+        address[] memory votedBy,
+        uint publishedAt,
+        string memory restaurant,
+        int32 longitude,
+        int32 latitude,
+        bool expired
+    ) {
+        Review storage review = reviews[serialNumber];
+        return (
+            review.writer,
+            review.title,
+            review.content,
+            review.votes,
+            review.votedBy,
+            review.publishedAt,
+            review.restaurant,
+            review.longitude,
+            review.latitude,
+            review.expired
+        );
     }
 
       function markAttendance() public {
