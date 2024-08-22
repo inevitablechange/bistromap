@@ -7,22 +7,22 @@ import "./utils/DateChecker.sol";
 import "./Staking.sol"; // 스테이킹 컨트랙트 import
 
 interface IStakingContract {
-    struct StakeDetails {
-        uint256 stake;
+    struct Stake {
+        uint256 amount;
         uint256 timestamp;
+        uint256 lastClaimTimestamp;
     }
-
-    function getStakeDetails(address staker) external view returns (StakeDetails memory);
+    function getStakeDetails(address staker) external view returns (Stake memory);
 }
 
 contract Reward {
     BSM public bistroToken;
-    DateChecker dateChecker;
+    DateChecker public dateChecker;
     IStakingContract public stakingContract; // 스테이킹 컨트랙트 인터페이스
 
     struct Attendance { // 출석체크
         uint[] dates;
-        uint consecutive;
+        uint8 consecutive;
     }
     struct Review {
         address writer; // 글쓴이
@@ -51,9 +51,10 @@ contract Reward {
     event Voted(address indexed user, uint256 reviewNumber);
     event AttendanceMarked(address indexed user, uint256 timestamp);
 
-    constructor(address _bistroTokenAddress, address _stakingContractAddress) {
+    constructor(address _bistroTokenAddress, address _stakingContractAddress, address _dateCheckerContractAddress) {
         bistroToken = BSM(_bistroTokenAddress);
         stakingContract = IStakingContract(_stakingContractAddress);
+        dateChecker = DateChecker(_dateCheckerContractAddress);
         lastRewardAt = block.timestamp;
     }
 
@@ -136,20 +137,22 @@ contract Reward {
         emit Published(msg.sender, reviewNumbers);
     }
 
-    function markAttendance() public {
+      function markAttendance() public {
         uint[] storage calendar = userAttendance[msg.sender].dates;
-        require(dateChecker.isToday(block.timestamp) == false, "Today's attendance checked");
+        
+        if (calendar.length >= 1 ) {
+            require(dateChecker.isToday(calendar[calendar.length - 1]) == false, "Today's attendance checked");
+        }
+
 
         // 스테이킹 여부 확인
-        require(stakingContract.getStakeDetails(msg.sender).stake >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
+        require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
 
         userAttendance[msg.sender].dates.push(block.timestamp);
-        if (calendar.length == 0) {
-            calendar.push(block.timestamp);
-        } else if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) {
-            userAttendance[msg.sender].consecutive++;
+        if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) {
+            userAttendance[msg.sender].consecutive += 1;
         } else {
-            userAttendance[msg.sender].consecutive = 0;
+            userAttendance[msg.sender].consecutive = 1;
         }
 
         uint attendanceReward = BSM_DECIMALS / 10;
@@ -169,7 +172,7 @@ contract Reward {
         require(rv.writer != msg.sender, "Voter can't vote for the her or his review.");
 
         // 스테이킹 여부 확인
-        require(stakingContract.getStakeDetails(msg.sender).stake >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
+        require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
 
         require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
         rv.votes = rv.votes + 1;

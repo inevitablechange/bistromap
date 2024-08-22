@@ -4,11 +4,9 @@ import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import Web3 from "web3";
 import supabase from "../supabaseClient";
-import RewardABI from "../../../../solidity/artifacts/contracts/Reward.sol/Reward.json";
+import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
-
-const RewardContractAddress = "0x87136c6Bf967dD4EFe2b2178aBddB13397a92B0E";
-
+import { rewardContractAddress } from "@/constants";
 interface AttendanceData {
   [key: string]: boolean;
 }
@@ -33,9 +31,10 @@ const CalendarComponent: React.FC = () => {
           setWeb3(web3Instance);
 
           const contract = new web3Instance.eth.Contract(
-            RewardABI.abi,
-            RewardContractAddress
+            RewardABI,
+            rewardContractAddress
           );
+          console.log("contract::", contract);
           setRewardContract(contract);
         } catch (error) {
           console.error("Error initializing Web3:", error);
@@ -66,6 +65,7 @@ const CalendarComponent: React.FC = () => {
       setMessage(null);
       try {
         const accounts = await web3.eth.getAccounts();
+        console.log("accounts::", accounts);
         await rewardContract.methods
           .markAttendance()
           .send({ from: accounts[0] });
