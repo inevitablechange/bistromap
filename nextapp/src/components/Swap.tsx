@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useCallback, FC } from "react";
 
 import { ethers } from "ethers";
-import { ERC20_ABI, ROUTER_ABI } from "../constants/abiConstants";
+import USDT_ABI from "../app/lib/usdtAbi.json";
+import BSM_ABI from "../app/lib/bistromapAbi.json";
+import ROUTER_ABI from "../app/lib/uniswapRouterAbi.json";
 import config from "@/constants/config";
 
 import { useAccount } from "@/context/AccountContext";
-import { Button, Flex, Input, Select } from "@chakra-ui/react";
+import { Button, Flex, Input, Select, Text } from "@chakra-ui/react";
 
 const Swap: FC = () => {
   const { signer, provider, account } = useAccount();
@@ -80,7 +82,7 @@ const Swap: FC = () => {
         setStatus("Approving BSM spend...");
         const bsmContract = new ethers.Contract(
           config.BSM_ADDRESS,
-          ERC20_ABI,
+          BSM_ABI,
           signer
         );
         const allowance = await bsmContract.allowance(
@@ -109,7 +111,7 @@ const Swap: FC = () => {
         setStatus("Approving USDT spend...");
         const usdtContract = new ethers.Contract(
           config.USDT_ADDRESS,
-          ERC20_ABI,
+          USDT_ABI,
           signer
         );
         const allowance = await usdtContract.allowance(
@@ -184,8 +186,10 @@ const Swap: FC = () => {
       <Button onClick={handleSwap} disabled={!account || !isInputValid}>
         Swap
       </Button>
-      {status && <p>{status}</p>}
-      {error && <p>{error}</p>}
+      <Text fontSize="20px" fontWeight="bold" align="center">
+        {status && <p>{status}</p>}
+        {error && <p>{error}</p>}
+      </Text>
     </>
   );
 };

@@ -11,14 +11,16 @@ const SwapPage: NextPage = () => {
 
   return (
     <Flex flexDir={"column"} padding={"20"} minWidth={"600px"}>
-      <Flex marginBottom={4} gap={4}>
+      <Flex marginBottom={4} gap={4} justifyContent={"center"}>
         <Button
           bgColor={activeComponent === "swap" ? "yellow.400" : "gray.100"}
           onClick={() => setActiveComponent("swap")}
+          flex={1}
         >
           Swap
         </Button>
         <Button
+          flex={1}
           bgColor={activeComponent === "swap" ? "gray.100" : "yellow.400"}
           onClick={() => setActiveComponent("addLiquidity")}
         >
