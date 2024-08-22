@@ -13,6 +13,9 @@ import { ethers } from "hardhat";
 변경이 필요할 경우, INIT_CODE_PAIR_HASH값을 참고해서 UniswapV2Library.sol > pairFor함수 내 hex값을 변경해야 한다.
 
 주의점 2)
+uniswap router에 토큰 전송 권한을 넘겨줘야 Liquidity를 공급할 수 있다.
+
+주의점 3)
 BSM Token의 소유권을 PoolRewards Contract에 넘겨야 Reward를 제공할 때 mint()함수를 사용할 수 있게 된다.
 */
 
