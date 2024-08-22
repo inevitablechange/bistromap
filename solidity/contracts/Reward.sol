@@ -126,6 +126,7 @@ contract Reward {
     function publish(string memory title, string memory restaurant, string memory content, int32 longitude, int32 latitude) public {
         // 500자 이상,
         uint serialNumber = reviewNumbers + 1;
+        reviewNumbers += 1;
         Review memory review;
         review.writer = msg.sender;
         review.serialNumber = serialNumber;
@@ -140,7 +141,7 @@ contract Reward {
         reviews[serialNumber] = review; // mapping
         reviewsPerAccount[msg.sender].push(review);
 
-        emit Published(msg.sender, reviewNumbers);
+        emit Published(msg.sender, serialNumber);
     }
 
     function getReviewsWrittenBySender() public view returns(Review[] memory) {
