@@ -3,13 +3,17 @@
 import React, { useState, useEffect, useCallback, FC } from "react";
 
 import { ethers } from "ethers";
-import { ERC20_ABI, ROUTER_ABI } from "../constants/abiConstants";
+import USDT_ABI from "../app/lib/usdtAbi.json";
+import BSM_ABI from "../app/lib/bistromapAbi.json";
+import ROUTER_ABI from "../app/lib/uniswapRouterAbi.json";
+
 import config from "@/constants/config";
 
 import { useAccount } from "@/context/AccountContext";
-import { Button, Flex, Input, Select } from "@chakra-ui/react";
+import { Button, Flex, Input, Select, Text } from "@chakra-ui/react";
+import { Contract } from "ethers";
 
-const Swap: FC = () => {
+const AddLiquidity: FC = () => {
   const { signer, provider, account } = useAccount();
 
   const [inputAmount, setInputAmount] = useState<string>("");
@@ -17,6 +21,9 @@ const Swap: FC = () => {
   const [isBsmToUsdt, setIsBsmToUsdt] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [bsmContract, setBsmContract] = useState<Contract | null>(null);
+  const [usdtContract, setUsdtContract] = useState<Contract | null>(null);
+  const [routerContract, setRouterContract] = useState<Contract | null>(null);
 
   const validateInputAmount = (amount: string): boolean => {
     const numAmount = parseFloat(amount);
@@ -33,11 +40,6 @@ const Swap: FC = () => {
     }
 
     try {
-      const router = new ethers.Contract(
-        config.UNISWAP_V2_ROUTER,
-        ROUTER_ABI,
-        provider
-      );
       const path = isBsmToUsdt
         ? [config.BSM_ADDRESS, config.USDT_ADDRESS]
         : [config.USDT_ADDRESS, config.BSM_ADDRESS];
@@ -45,8 +47,17 @@ const Swap: FC = () => {
       const amountIn = ethers.parseUnits(inputAmount, 18);
       console.log(await provider.getNetwork(), signer, path);
 
-      const amounts = await router.getAmountsOut(amountIn, path);
-      setOutputAmount(ethers.formatUnits(amounts[1], isBsmToUsdt ? 18 : 18));
+      if (!bsmContract || !usdtContract || !routerContract) return;
+
+      const bsmReserve = bsmContract.balanceOf(config.UNISWAP_V2_ROUTER);
+      const usdtReserve = usdtContract.balanceOf(config.UNISWAP_V2_ROUTER);
+      const amountOut = await routerContract.quote(
+        amountIn,
+        bsmReserve,
+        usdtReserve
+      );
+
+      setOutputAmount(ethers.formatUnits(amountOut, isBsmToUsdt ? 18 : 18));
     } catch (error) {
       console.error("Error estimating output:", error);
     }
@@ -58,6 +69,16 @@ const Swap: FC = () => {
     }
   }, [getEstimatedOutput, inputAmount, isBsmToUsdt, provider]);
 
+  useEffect(() => {
+    if (!signer) return;
+
+    setBsmContract(new Contract(config.BSM_ADDRESS, BSM_ABI, signer));
+    setUsdtContract(new Contract(config.USDT_ADDRESS, USDT_ABI, signer));
+    setRouterContract(
+      new Contract(config.UNISWAP_V2_ROUTER, ROUTER_ABI, signer)
+    );
+  }, [signer]);
+
   const handleSwap = async () => {
     if (!account || !provider) return;
 
@@ -65,31 +86,17 @@ const Swap: FC = () => {
     setStatus("Initiating swap...");
 
     try {
-      const router = new ethers.Contract(
-        config.UNISWAP_V2_ROUTER,
-        ROUTER_ABI,
-        signer
-      );
-
-      const path = isBsmToUsdt
-        ? [config.BSM_ADDRESS, config.USDT_ADDRESS]
-        : [config.USDT_ADDRESS, config.BSM_ADDRESS];
       const deadline = Math.floor(Date.now() / 1000) + 60 * 10; // 10 minutes from now
 
       if (isBsmToUsdt) {
         setStatus("Approving BSM spend...");
-        const bsmContract = new ethers.Contract(
-          config.BSM_ADDRESS,
-          ERC20_ABI,
-          signer
-        );
-        const bsmAllowance = await bsmContract.allowance(
+        const bsmAllowance = await bsmContract?.allowance(
           account,
           config.UNISWAP_V2_ROUTER
         );
         const bsmAmount = ethers.parseUnits(inputAmount, 18);
-        if (bsmAllowance < amountIn) {
-          const approveTx = await bsmContract.approve(
+        if (bsmAllowance < bsmAmount) {
+          const approveTx = await bsmContract?.approve(
             config.UNISWAP_V2_ROUTER,
             bsmAmount
           );
@@ -97,79 +104,91 @@ const Swap: FC = () => {
         }
 
         setStatus("Approving USDT spend...");
-        const usdtContract = new ethers.Contract(
-          config.USDT_ADDRESS,
-          ERC20_ABI,
-          signer
-        );
-        const usdtAllowance = await usdtContract.allowance(
+
+        const usdtAllowance = await usdtContract?.allowance(
           account,
           config.UNISWAP_V2_ROUTER
         );
-        const usdtAmount = ethers.parseUnits(inputAmount, 18);
-        if (usdtAllowance < amountIn) {
-          const approveTx = await bsmContract.approve(
+        const usdtAmount = ethers.parseUnits(outputAmount, 18);
+        if (usdtAllowance < usdtAmount) {
+          const approveTx = await bsmContract?.approve(
             config.UNISWAP_V2_ROUTER,
             usdtAmount
           );
           await approveTx.wait();
         }
         setStatus("Adding Liquidity to BSM-USDT Pool...");
-        const tx = await router.addLiquidity(
-          inputAmount,
-          0, // We're not setting a minimum amount out for simplicity
-          path,
+        const tx = await routerContract?.addLiquidity(
+          bsmContract,
+          usdtContract,
+          bsmAmount,
+          usdtAmount,
+          0,
+          0,
           account,
           deadline
         );
         setStatus("Waiting for transaction confirmation...");
         await tx.wait();
       } else {
-        setStatus("Approving USDT spend...");
-        const usdtContract = new ethers.Contract(
-          config.USDT_ADDRESS,
-          ERC20_ABI,
-          signer
-        );
-        const allowance = await usdtContract.allowance(
+        setStatus("Approving BSM spend...");
+        const bsmAllowance = await bsmContract?.allowance(
           account,
           config.UNISWAP_V2_ROUTER
         );
-        const amountIn = ethers.parseUnits(inputAmount, 6);
-        if (allowance < amountIn) {
-          const approveTx = await usdtContract.approve(
+        const bsmAmount = ethers.parseUnits(inputAmount, 18);
+        if (bsmAllowance < bsmAmount) {
+          const approveTx = await bsmContract?.approve(
             config.UNISWAP_V2_ROUTER,
-            amountIn
+            bsmAmount
           );
           await approveTx.wait();
         }
-        setStatus("Swapping USDT for BSM...");
-        const tx = await router.swapExactTokensForTokens(
-          amountIn,
-          0, // We're not setting a minimum amount out for simplicity
-          path,
+
+        setStatus("Approving USDT spend...");
+        const usdtAllowance = await usdtContract?.allowance(
+          account,
+          config.UNISWAP_V2_ROUTER
+        );
+
+        const usdtAmount = ethers.parseUnits(outputAmount, 18);
+        if (usdtAllowance < usdtAmount) {
+          const approveTx = await bsmContract?.approve(
+            config.UNISWAP_V2_ROUTER,
+            usdtAmount
+          );
+          await approveTx.wait();
+        }
+        setStatus("Adding Liquidity to BSM-USDT Pool...");
+        const tx = await routerContract?.addLiquidity(
+          bsmContract,
+          usdtContract,
+          bsmAmount,
+          usdtAmount,
+          0,
+          0,
           account,
           deadline
         );
         setStatus("Waiting for transaction confirmation...");
         await tx.wait();
       }
-      setStatus("Swap successful!");
+      setStatus("Add Liquidity successful!");
     } catch (error) {
-      console.error("Swap failed:", error);
+      console.error("Add Liquidity failed:", error);
       let errorMessage = "An unknown error occurred";
       if (error instanceof Error) {
         if (
           error.message.includes("user rejected") ||
           error.message.includes("ACTION_REJECTED")
         ) {
-          errorMessage = "Swap failed: Transaction rejected";
+          errorMessage = "Add Liquidity failed: Transaction rejected";
         } else if (error.message.includes("INSUFFICIENT_FUNDS")) {
-          errorMessage = "Swap failed: Insufficient funds";
+          errorMessage = "Add Liquidity failed: Insufficient funds";
         } else if (error.message.includes("transaction failed")) {
-          errorMessage = `Swap failed: Transaction failed`;
+          errorMessage = `Add Liquidity failed: Transaction failed`;
         } else {
-          errorMessage = "Swap failed";
+          errorMessage = "Add Liquidity failed";
         }
       }
       setError(errorMessage);
@@ -201,12 +220,14 @@ const Swap: FC = () => {
         />
       </Flex>
       <Button onClick={handleSwap} disabled={!account || !isInputValid}>
-        Swap
+        Add Liquidity to BSM-USDT Pool
       </Button>
-      {status && <p>{status}</p>}
-      {error && <p>{error}</p>}
+      <Text fontSize="20px" fontWeight="bold" align="center">
+        {status && <p>{status}</p>}
+        {error && <p>{error}</p>}
+      </Text>
     </>
   );
 };
 
-export default Swap;
+export default AddLiquidity;
