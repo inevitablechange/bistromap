@@ -18,12 +18,12 @@ import {
   Heading,
 } from "@chakra-ui/react";
 import { ChevronRightIcon } from "@chakra-ui/icons";
-import { useEffect } from "react";
-import { NextPage } from "next";
+import { FC, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useAccount } from "@/context/AccountContext";
-const NavBar: NextPage = () => {
+
+const NavBar: FC = () => {
   const { isOpen, onClose, onOpen } = useDisclosure();
   const { account, connectWallet, disconnectWallet } = useAccount();
 
