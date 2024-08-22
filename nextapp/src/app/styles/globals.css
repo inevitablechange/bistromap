@@ -196,7 +196,8 @@ input[type="text"] {
   margin-top: 10px;
 }
 
-.present {
-  background-color: #4caf50;
-  color: white;
+/* quill editor */
+.ql-container {
+  background-color: #fff;
+  font-size: 20px;
 }

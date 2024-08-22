@@ -57,12 +57,6 @@ const MintPage: React.FC = () => {
         },
         body: formData,
       };
-
-      // fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", options)
-      //   .then((response) => response.json())
-      //   .then((response) => console.log(response))
-      //   .catch((err) => console.error(err));
-
       const response = await axios.post(PinataUploadUrl, formData, options);
       const ipfsHash = response.data.IpfsHash;
       return `https://ipfs.io/ipfs/${ipfsHash}`;
