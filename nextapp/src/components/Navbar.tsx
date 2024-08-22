@@ -31,11 +31,13 @@ const NavBar: NextPage = () => {
     onClose();
     disconnectWallet();
   };
+
   useEffect(() => {
-    if (!connectWallet || typeof connectWallet != "function") return;
-    const isLoggedIn = !!window.localStorage.getItem("loggedIn");
-    isLoggedIn && connectWallet();
+    if (localStorage.getItem("loggedIn") === "true") {
+      connectWallet();
+    }
   }, []);
+
   return (
     <Flex marginX={"auto"} maxWidth={"1280px"} flex={{ base: 1 }}>
       <Flex

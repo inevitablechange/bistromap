@@ -1,4 +1,5 @@
 "use client";
+
 import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
@@ -31,7 +32,10 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
     if (typeof window.ethereum !== "undefined") {
       try {
         const data = await pinata.listFiles().pinStart("2024-07-16T11:41:19Z");
-        setNftBanners(data);
+        const nftBanners = data.filter(
+          (banner) => banner.metadata?.keyvalues?.link
+        );
+        setNftBanners(nftBanners);
 
         setLoading(false);
       } catch (error) {
@@ -62,10 +66,10 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
       {nftBanners.map((banner) => (
         <SwiperSlide key={banner.ipfs_pin_hash}>
           <Flex>
-            <Link href={banner.metadata.keyvalues?.link}>
+            <Link href={banner?.metadata?.keyvalues?.link}>
               <img
                 src={`https://pink-rapid-clownfish-409.mypinata.cloud/ipfs/${banner.ipfs_pin_hash}`}
-                alt={banner.metadata.keyvalues?.link}
+                alt={banner?.metadata?.keyvalues?.link}
                 width={"100%"}
                 height={400}
               />

@@ -39,7 +39,7 @@ export default function Home() {
           Welcome to Bistromap, where we take your cravings to a whole new
           level! <br />
           Our mouthwatering burgers are made from 100% beef and are served on
-          freshly baked buns.{" "}
+          freshly baked buns.
         </Text>
         <Flex gap={6} justifyContent={"center"}>
           <Button

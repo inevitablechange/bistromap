@@ -21,7 +21,7 @@ const RootLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Header /> {/* Header를 레이아웃 상단에 추가 */}
               {/* 경로에 따라 배너를 조건부로 렌더링 */}
               <Box height="100vh">{children}</Box> {/* 자식 컴포넌트 */}
-              {/* <Footer />  */}
+              <Footer />
             </Flex>
           </AccountProvider>
         </Providers>
