@@ -28,6 +28,9 @@ contract StakingContract {
         BSMToken = BSM(_BSMToken);
     }
     
+    function getStakeDetails(address staker) external view returns (Stake memory) {
+            return stakes[staker];
+    }
     function stake(uint256 _amount) external {
         require(_amount >= MINIMUM_STAKE_AMOUNT, "Stake amount too low");
 

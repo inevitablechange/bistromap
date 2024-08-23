@@ -1,43 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import BannerNFT from "../../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
-import BSMToken from "../../../../solidity/artifacts/contracts/BsmToken.sol/BSM.json";
 import axios from "axios";
-import abi from "@/components/abi.json";
-const bannerNFTAddress = "0x21d676bEf25F02CDeb1CBEd897f8547CCA306577";
-const bsmTokenAddress = "0x79Ae9522a82d9c30159B18C6831d6540F68811fB";
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  Heading,
+  Input,
+} from "@chakra-ui/react";
+import { useAccount } from "@/context/AccountContext";
+import { redirect } from "next/navigation";
+import { bsmContractAddress } from "@/constants";
+import bsmABI from "@/abi/BsmToken.json";
+const bannerNFTAddress = "0xA6677DD9FcD2FD71085f199455a121caaeE69853";
 
 const NFT_PRICE = ethers.parseUnits("2000", 18); // 2000 BSM, 18 decimals
 
 const PinataUploadUrl = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-const PinataJsonUrl = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
-const PinataApiKey = process.env.NEXT_PUBLIC_PINATA_API_KEY || "";
-const PinataSecretApiKey = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY || "";
 
 const MintPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [account, setAccount] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState<string>("");
+  const [restaurant, setRestaurant] = useState<string>("");
 
-  // MetaMask 연결
-  const connectMetaMask = async () => {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        setAccount(accounts[0]);
-      } catch (error) {
-        console.error("Error connecting MetaMask", error);
-      }
-    } else {
-      alert("MetaMask is not installed.");
-    }
-  };
-
+  const { account } = useAccount();
+  const isError = description === "" || restaurant == "" || file == null;
   // 파일 변경 핸들링
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -49,48 +43,25 @@ const MintPage: React.FC = () => {
   const uploadToIPFS = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-
+    formData.append(
+      "pinataMetadata",
+      `{\n  "name": "${restaurant}",\n  "keyvalues": { \n"link":"${description}"\n}\n}`
+    );
+    formData.append("pinataOptions", '{\n  "cidVersion": 1\n}');
     try {
-      const response = await axios.post(PinataUploadUrl, formData, {
+      const options = {
+        method: "POST",
         headers: {
-          "Content-Type": "multipart/form-data",
-          "pinata-api-key": PinataApiKey,
-          "pinata-secret-api-key": PinataSecretApiKey,
           Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+          "Content-Type": "multipart/form-data",
         },
-      });
-
+        body: formData,
+      };
+      const response = await axios.post(PinataUploadUrl, formData, options);
       const ipfsHash = response.data.IpfsHash;
       return `https://ipfs.io/ipfs/${ipfsHash}`;
     } catch (error) {
       console.error("Error uploading to IPFS:", error);
-      throw error;
-    }
-  };
-
-  // 메타데이터 생성 및 IPFS 업로드
-  const createMetadata = async (imageUrl: string): Promise<string> => {
-    const metadata = {
-      name: "Banner",
-      description: description, // 링크가 저장될 필드
-      image: imageUrl,
-      attributes: [],
-    };
-
-    try {
-      const response = await axios.post(PinataJsonUrl, metadata, {
-        headers: {
-          "Content-Type": "application/json",
-          "pinata-api-key": PinataApiKey,
-          "pinata-secret-api-key": PinataSecretApiKey,
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
-        },
-      });
-
-      const ipfsHash = response.data.IpfsHash;
-      return `https://ipfs.io/ipfs/${ipfsHash}`;
-    } catch (error) {
-      console.error("Error creating metadata:", error);
       throw error;
     }
   };
@@ -119,20 +90,13 @@ const MintPage: React.FC = () => {
       BannerNFT.abi,
       signer
     );
-    const bsmContract = new ethers.Contract(
-      bsmTokenAddress,
-      BSMToken.abi,
-      signer
-    );
+    const bsmContract = new ethers.Contract(bsmContractAddress, bsmABI, signer);
 
     try {
       setLoading(true);
 
       // 파일을 IPFS에 업로드
       const imageUrl = await uploadToIPFS(file);
-
-      // 메타데이터 생성 및 IPFS 업로드
-      const metadataUrl = await createMetadata(imageUrl);
 
       // NFT 민팅을 위한 승인 처리
       const allowance = await bsmContract.allowance(account, bannerNFTAddress);
@@ -150,7 +114,7 @@ const MintPage: React.FC = () => {
       }
 
       // NFT 민팅
-      const tx = await nftContract.mintNFT(metadataUrl);
+      const tx = await nftContract.mintNFT(imageUrl);
       await tx.wait();
 
       alert("NFT has been minted successfully!");
@@ -169,29 +133,67 @@ const MintPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (!account) redirect("/");
+  }, [account]);
+
   return (
-    <div className="mint-container">
-      <h1>Mint Your NFT</h1>
-      <p>Click the button below to mint your NFT.</p>
-      {account ? (
-        <div className="mint-controls">
-          <input type="file" onChange={handleFileChange} />
-          <input
+    <Box height="calc(100vh - 60px)" width={"1280px"}>
+      <Box bgColor={"lightGreen"} textAlign={"center"} py={16}>
+        <Heading as="h1">Mint Your NFT</Heading>
+      </Box>
+
+      <Flex
+        gap={12}
+        direction="column"
+        bgColor="cream"
+        mt={6}
+        rounded={"lg"}
+        py={8}
+        px={4}
+      >
+        <FormControl isInvalid={isError} isRequired>
+          <FormLabel>Restaurant Name</FormLabel>
+          <Input
             type="text"
+            placeholder="Restaurant name"
+            value={restaurant}
+            onChange={(e) => setRestaurant(e.target.value)}
+          />
+          <FormHelperText>
+            Please write down the name of restaurant.
+          </FormHelperText>
+        </FormControl>
+        <FormControl isInvalid={isError} isRequired>
+          <FormLabel>Website or link to introduce your restaurant.</FormLabel>
+          <Input
+            type="text"
+            placeholder="Website or link"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+          />
+        </FormControl>
+        <FormControl isInvalid={isError} isRequired>
+          <FormLabel>
+            Please upload an image file which will be used as banner&nbsp;&nbsp;{" "}
+            <small>1280px(width) x 400px(height)</small>
+          </FormLabel>
+          <Input
+            type="file"
+            onChange={handleFileChange}
             placeholder="Enter the link"
           />
-          <button onClick={handleMint} disabled={loading} className="btn">
-            {loading ? "Minting..." : "Mint NFT"}
-          </button>
-        </div>
-      ) : (
-        <button onClick={connectMetaMask} disabled={loading} className="btn">
-          Connect to MetaMask
-        </button>
-      )}
-    </div>
+          <FormHelperText>
+            Minting requires 2,000 BSM and it will be posted as banner right
+            away. Please check the image before you mint.
+          </FormHelperText>
+        </FormControl>
+      </Flex>
+
+      <Button onClick={handleMint} disabled={loading} mt={12}>
+        {loading ? "Minting..." : "Mint NFT"}
+      </Button>
+    </Box>
   );
 };
 

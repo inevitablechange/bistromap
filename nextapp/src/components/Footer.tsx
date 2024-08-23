@@ -1,17 +1,11 @@
 "use client";
 
-import { NextPage } from "next";
-
 import { Stack, HStack, VStack, Link, Flex } from "@chakra-ui/react";
+import { FC } from "react";
 
-const Footer: NextPage = () => {
+const Footer: FC = () => {
   return (
-    <Flex
-      bgColor="gray.200"
-      p={{ base: 5, md: 8 }}
-      w="100%"
-      justifyContent="center"
-    >
+    <Flex p={{ base: 5, md: 8 }} w="100%" justifyContent="center">
       <Stack
         w={1280}
         px={8}

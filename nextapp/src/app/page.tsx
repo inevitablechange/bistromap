@@ -4,11 +4,14 @@ import RestaurantCard from "@/components/RestaurantCard";
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { usePathname } from "next/navigation"; // 현재 경로를 확인하는 훅
 import BannerSlider from "../components/BannerSlider"; // 배너 슬라이더 컴포넌트
-import "@/app/styles/globals.css"; // 전역 스타일
+import "@/styles/globals.css"; // 전역 스타일
+import OwnerCheckModal from "@/components/OwnerCheckModal";
+import { useState } from "react";
 
 export default function Home() {
   const pathname = usePathname(); // 현재 경로를 가져옵니다
   const showBanner = pathname !== "/mint";
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   return (
     <Box w={"100%"}>
@@ -36,7 +39,7 @@ export default function Home() {
           Welcome to Bistromap, where we take your cravings to a whole new
           level! <br />
           Our mouthwatering burgers are made from 100% beef and are served on
-          freshly baked buns.{" "}
+          freshly baked buns.
         </Text>
         <Flex gap={6} justifyContent={"center"}>
           <Button
@@ -60,7 +63,9 @@ export default function Home() {
           </Button>
         </Flex>
       </Box>
-      <BannerSlider />
+      <BannerSlider setIsModalOpen={setIsModalOpen} />
+      <OwnerCheckModal isOpen={isModalOpen} />
+
       <Flex minWidth={"1440px"} justifyContent={"center"}>
         <RestaurantCard />
         <RestaurantCard />

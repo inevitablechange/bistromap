@@ -1,22 +1,27 @@
 "use client";
 
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import React, { useEffect, useState } from "react";
-import Slider from "react-slick";
-import Image from "next/image";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
-import { ethers } from "ethers";
-import abi from "./abi.json";
-// import BannerNFT from "../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
-import styles from "@/app/styles/BannerSlider.module.css";
+import { PinataSDK, PinListItem } from "pinata";
+import { A11y, Navigation, Pagination, Scrollbar } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import "swiper/css/scrollbar";
+import { Box, Flex } from "@chakra-ui/react";
 
-const bannerNFTAddress = "0x21d676bEf25F02CDeb1CBEd897f8547CCA306577";
+interface BannerSliderProps {
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>;
+}
 
-const BannerSlider: React.FC = () => {
-  const [nftBanners, setNftBanners] = useState<
-    Array<{ image: string; link: string }>
-  >([]);
+const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
+  const pinata = new PinataSDK({
+    pinataJwt: process.env.NEXT_PUBLIC_PINATA_JWT || "",
+    pinataGateway: "pink-rapid-clownfish-409.mypinata.cloud",
+  });
+
+  const [nftBanners, setNftBanners] = useState<PinListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,32 +30,13 @@ const BannerSlider: React.FC = () => {
 
   const fetchNFTBanners = async () => {
     if (typeof window.ethereum !== "undefined") {
-      const provider = await new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(bannerNFTAddress, abi, signer);
-
       try {
-        const totalSupply = await contract.totalSupply();
-        const banners = [];
-        console.log(Number(totalSupply));
-        const tokenURI = await contract.tokenURI(1); // debugging 중...
-        console.log({ tokenURI });
-        const response = await fetch(tokenURI);
-        const metadata = await response.json();
-        banners.push({ image: metadata.image, link: metadata.description });
-        // for (
-        //   let i = Number(totalSupply);
-        //   i > Number(totalSupply) - 2 && i > 0;
-        //   i--
-        // ) {
-        //   // 최근 2개 가져오기
-        //   const tokenURI = await contract.tokenURI(i);
-        //   const response = await fetch(tokenURI);
-        //   const metadata = await response.json();
-        //   banners.push({ image: metadata.image, link: metadata.description });
-        // }
+        const data = await pinata.listFiles().pinStart("2024-07-16T11:41:19Z");
+        const nftBanners = data.filter(
+          (banner) => banner.metadata?.keyvalues?.link
+        );
+        setNftBanners(nftBanners);
 
-        setNftBanners(banners);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching NFT banners:", error);
@@ -59,41 +45,80 @@ const BannerSlider: React.FC = () => {
     }
   };
 
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
+  const handleClick = () => {
+    setIsModalOpen(true);
   };
-
-  const adsBanner = {
-    image: "/images/Ads.jpeg",
-    link: "/mint",
-  };
-
-  const allBanners = [...nftBanners, adsBanner];
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <Slider {...settings} className={styles.slider}>
-      {allBanners.map((banner, index) => (
-        <div key={index}>
-          <Link href={banner.link}>
-            <Image
-              src={banner.image}
-              alt={`Banner ${index + 1}`}
-              width={900}
-              height={400}
-              layout="responsive"
-            />
-          </Link>
-        </div>
+    <Swiper
+      modules={[Pagination, Navigation, Scrollbar, A11y]}
+      slidesPerView={1}
+      navigation
+      pagination={{ clickable: true }}
+      scrollbar={{ draggable: true }}
+      // onSwiper={(swiper) => console.log(swiper)}
+      onSlideChange={() => console.log("slide change")}
+    >
+      {nftBanners.map((banner) => (
+        <SwiperSlide key={banner.ipfs_pin_hash}>
+          <Flex>
+            <Link href={banner?.metadata?.keyvalues?.link}>
+              <img
+                src={`https://pink-rapid-clownfish-409.mypinata.cloud/ipfs/${banner.ipfs_pin_hash}`}
+                alt={banner?.metadata?.keyvalues?.link}
+                width={"100%"}
+                height={400}
+              />
+            </Link>
+          </Flex>
+        </SwiperSlide>
       ))}
-    </Slider>
+      <SwiperSlide>
+        <Box
+          style={{
+            display: "block",
+            position: "relative",
+            width: "100%",
+            height: "400px",
+          }}
+        >
+          <img
+            src={"/assets/bg-banner.png"}
+            alt={"Available Ads"}
+            width={"100%"}
+            height={"auto"}
+            style={{ position: "absolute" }}
+          />
+          <Box
+            position="absolute"
+            left={"50%"}
+            transform={"translateX(-50%)"}
+            mt="140px"
+            fontSize={"lg"}
+            fontWeight={700}
+            textColor={"white"}
+            borderRadius={6}
+            padding={6}
+            bgColor={"#1D211A40"}
+          >
+            Ads Banner Available Here
+            <br />
+            Click &nbsp;
+            <span
+              style={{ cursor: "pointer", color: "#F3CD00", fontSize: 24 }}
+              onClick={handleClick}
+            >
+              <i>here</i>
+            </span>
+            &nbsp; and make your business accessible to users
+          </Box>
+        </Box>
+      </SwiperSlide>
+    </Swiper>
   );
 };
 
