@@ -131,8 +131,9 @@ export default function BSMstake() {
         setStakedTimestamp(stakedInfo.timestamp.toNumber());
 
         // Calculate if the user can unstake
+        const currentTimestamp = Math.floor(Date.now() / 1000); // 현재 시간을 초 단위로 변환
         const canUnstake =
-          block.timestamp >=
+          currentTimestamp >=
           stakedInfo.timestamp.toNumber() + 24 * 7 * 24 * 60 * 60; // 24 weeks in seconds
         setCanUnstake(canUnstake);
       } catch (error) {
