@@ -1,4 +1,3 @@
-import { storeEthereumAddress } from "@/utils/ethereumAddressHandler";
 import { BrowserProvider, JsonRpcSigner, ethers } from "ethers";
 import { useState } from "react";
 
@@ -26,7 +25,6 @@ export const useAccountProvider = (): [
       setAccount(address);
 
       window.localStorage.setItem("loggedIn", "true");
-      await storeEthereumAddress(address);
     } catch (error) {
       console.error("Failed to connect to MetaMask:", error);
     }

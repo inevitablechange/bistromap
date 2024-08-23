@@ -71,7 +71,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
                 src={`https://pink-rapid-clownfish-409.mypinata.cloud/ipfs/${banner.ipfs_pin_hash}`}
                 alt={banner?.metadata?.keyvalues?.link}
                 width={"100%"}
-                height={400}
+                height={300}
               />
             </Link>
           </Flex>

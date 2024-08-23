@@ -110,14 +110,8 @@ h1 {
   margin-bottom: 10px;
 }
 
-p {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 20px;
-}
-
 .swiper {
-  max-width: 1440px;
+  max-width: 1280px;
 }
 .swiper-wrapper {
   height: 400px;
