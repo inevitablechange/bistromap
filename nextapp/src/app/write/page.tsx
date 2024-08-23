@@ -1,7 +1,7 @@
 "use client";
 
 import { IoLocation } from "react-icons/io5";
-import supabase from "../supabaseClient";
+import supabase from "../../lib/supabaseClient";
 import { Box, Button, Flex, FormControl, Input, Text } from "@chakra-ui/react";
 import { NextPage } from "next";
 import { useForm, FormProvider } from "react-hook-form";

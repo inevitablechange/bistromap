@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useCallback, FC } from "react";
 
 import { ethers } from "ethers";
-import USDT_ABI from "../app/lib/usdtAbi.json";
-import BSM_ABI from "../app/lib/bistromapAbi.json";
-import ROUTER_ABI from "../app/lib/uniswapRouterAbi.json";
+import USDT_ABI from "../abi/usdtAbi.json";
+import BSM_ABI from "../abi/bistromapAbi.json";
+import ROUTER_ABI from "../abi/uniswapRouterAbi.json";
 
 import config from "@/constants/config";
 
@@ -219,7 +219,11 @@ const AddLiquidity: FC = () => {
           placeholder={`${isBsmToUsdt ? "USDT" : "BSM"} amount`}
         />
       </Flex>
-      <Button onClick={handleSwap} disabled={!account || !isInputValid}>
+      <Button
+        onClick={handleSwap}
+        disabled={!account || !isInputValid}
+        bgColor="yellow.400"
+      >
         Add Liquidity to BSM-USDT Pool
       </Button>
       <Text fontSize="20px" fontWeight="bold" align="center">

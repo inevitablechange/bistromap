@@ -131,9 +131,9 @@ export default function BSMstake() {
         setStakedTimestamp(stakedInfo.timestamp.toNumber());
 
         // Calculate if the user can unstake
-        const canUnstake =
-          block.timestamp >=
-          stakedInfo.timestamp.toNumber() + 24 * 7 * 24 * 60 * 60; // 24 weeks in seconds
+        // const canUnstake =
+        //   block.timestamp >=
+        //   stakedInfo.timestamp.toNumber() + 24 * 7 * 24 * 60 * 60; // 24 weeks in seconds
         setCanUnstake(canUnstake);
       } catch (error) {
         console.error("Failed to fetch staked information:", error);

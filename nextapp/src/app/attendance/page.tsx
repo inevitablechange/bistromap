@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import Web3 from "web3";
-import supabase from "../supabaseClient";
+import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
 import { rewardContractAddress } from "@/constants";

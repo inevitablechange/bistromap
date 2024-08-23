@@ -4,7 +4,7 @@ import RestaurantCard from "@/components/RestaurantCard";
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { usePathname } from "next/navigation"; // 현재 경로를 확인하는 훅
 import BannerSlider from "../components/BannerSlider"; // 배너 슬라이더 컴포넌트
-import "@/app/styles/globals.css"; // 전역 스타일
+import "@/styles/globals.css"; // 전역 스타일
 import OwnerCheckModal from "@/components/OwnerCheckModal";
 import { useState } from "react";
 

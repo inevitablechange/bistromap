@@ -1,5 +1,5 @@
 // ethereumAddressHandler.ts
-import supabase from "@/app/supabaseClient";
+import supabase from "@/lib/supabaseClient";
 
 // Define the function to store Ethereum address
 export async function storeEthereumAddress(_address: string) {
