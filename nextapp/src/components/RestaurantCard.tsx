@@ -1,12 +1,11 @@
-import { StarIcon } from "@chakra-ui/icons";
 import { Badge, Box, Flex, Heading, Image, Text } from "@chakra-ui/react";
 import { IoRestaurantOutline } from "react-icons/io5";
-import { TfiHeart } from "react-icons/tfi";
+import { useRouter } from "next/navigation";
 
 const RestaurantCard = ({ card }: Publication) => {
   const cleanMessage = card.content.replace(/<img\b[^>]*>/gi, "");
   const firstImgSrcMatch = card.content.match(/<img[^>]+src="([^">]+)"/i);
-
+  const router = useRouter();
   // Extract the src value (if found)
   const firstImgSrc = firstImgSrcMatch ? firstImgSrcMatch[1] : null;
   const getFormattedDate = (d: string) =>
@@ -16,7 +15,13 @@ const RestaurantCard = ({ card }: Publication) => {
       day: "2-digit",
     }).format(new Date(d));
   return (
-    <Box borderRadius="lg" overflow="hidden" h={"500px"}>
+    <Box
+      borderRadius="lg"
+      overflow="hidden"
+      h={"500px"}
+      cursor="pointer"
+      onClick={() => router.push(`/posts/${card.serial_number}`)}
+    >
       <Box>
         <Image
           w={"full"}
@@ -46,14 +51,12 @@ const RestaurantCard = ({ card }: Publication) => {
             {card.title}
           </Heading>
 
-          <Text>
-            <Flex mt={2} gap={3} alignItems={"center"}>
-              <IoRestaurantOutline /> {card.restaurant},{" "}
-              <Text fontSize={"small"} alignSelf={"end"}>
-                Published at {getFormattedDate(card.published_at)}
-              </Text>
-            </Flex>
-          </Text>
+          <Flex mt={2} gap={3} alignItems={"center"}>
+            <IoRestaurantOutline /> {card.restaurant},{" "}
+            <Text fontSize={"small"} alignSelf={"end"}>
+              Published at {getFormattedDate(card.published_at)}
+            </Text>
+          </Flex>
         </Box>
 
         <Box
