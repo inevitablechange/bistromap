@@ -1,7 +1,7 @@
 "use client";
 
 import { IoLocation } from "react-icons/io5";
-import supabase from "../supabaseClient";
+import supabase from "@/lib/supabaseClient";
 import { storeEthereumAddress } from "@/utils/ethereumAddressHandler";
 
 import {
@@ -13,7 +13,6 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
 import { NextPage } from "next";
 import { useForm, FormProvider } from "react-hook-form";
 import { useEffect, useState } from "react";
@@ -49,7 +48,6 @@ const Edit: NextPage = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const toast = useToast();
   const methods = useForm();
-  const router = useRouter();
   const {
     handleSubmit,
     register,

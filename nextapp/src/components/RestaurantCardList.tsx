@@ -1,13 +1,12 @@
 import { Flex, Grid } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
-import supabase from "@/app/supabaseClient";
+import supabase from "@/lib/supabaseClient";
 import RestaurantCard from "./RestaurantCard";
 
 const RestaurantCardList = () => {
   const [cards, setCards] = useState<Publication>([]);
   useEffect(() => {
     const getReviews = async () => {
-      console.log("get reviews");
       const { data: reviews, error } = await supabase
         .from("publications")
         .select("*")
