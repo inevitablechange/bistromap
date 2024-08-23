@@ -1,8 +1,19 @@
 "use client";
 
 import { IoLocation } from "react-icons/io5";
-import supabase from "../../lib/supabaseClient";
-import { Box, Button, Flex, FormControl, Input, Text } from "@chakra-ui/react";
+import supabase from "../supabaseClient";
+import { storeEthereumAddress } from "@/utils/ethereumAddressHandler";
+
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  Input,
+  Text,
+  useToast,
+} from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 import { NextPage } from "next";
 import { useForm, FormProvider } from "react-hook-form";
 import { useEffect, useState } from "react";
@@ -14,6 +25,7 @@ import { useAccount } from "@/context/AccountContext";
 import rewardABI from "@/abi/Reward.json";
 import { ethers } from "ethers";
 import { Contract } from "ethers";
+import LoaderModal from "@/components/LoaderModal";
 
 interface ReviewData {
   user_address: string; // 이더리움 주소, 42자짜리 문자열
@@ -33,31 +45,35 @@ const Edit: NextPage = () => {
   const [length, setLength] = useState<number>(0);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const toast = useToast();
   const methods = useForm();
+  const router = useRouter();
   const {
     handleSubmit,
     register,
     formState: { errors, isSubmitting },
   } = methods;
-  const { account } = useAccount();
+  const { account, signer } = useAccount();
 
   const handleLocationSelect = (location: string) => {
     setSelectedLocation(location);
     setIsMapOpen(false); // 선택 후 구글 맵 닫기
   };
-
+  console.log({ account });
   async function onSubmit(values: any) {
     try {
+      setIsLoading(true);
       console.log("values::", values);
       values.content = content;
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
       const rewardContract = new ethers.Contract(
         rewardContractAddress,
         rewardABI,
         signer
       );
-      console.log({ rewardContract });
+      storeEthereumAddress(account!);
+
       setContract(rewardContract);
       const lng = Math.floor(values.location.lng * Math.pow(10, 6));
       const lat = Math.floor(values.location.lat * Math.pow(10, 6));
@@ -67,42 +83,61 @@ const Edit: NextPage = () => {
       console.log("publish ok");
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsModalOpen(true);
+      setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    if (!contract) return;
-    contract.on("Published", async (user_address, serial_number) => {
-      console.log("Published event detected:");
-      // Fetch review details from contract
-      const review = await contract.getReview(serial_number);
-      const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
+    const handlePublishEvent = () => {
+      try {
+        if (!contract) return;
+        contract.on("Published", async (user_address, serial_number) => {
+          console.log("Published event detected:");
+          // Fetch review details from contract
+          const review = await contract.getReview(serial_number);
+          const decodedContent = Buffer.from(
+            review.content,
+            "base64"
+          ).toString(); // Decode base64 to HTML content
 
-      // Save to Supabase
-      const { error } = await supabase.from("publications").insert([
-        {
-          user_address: review.writer,
-          serial_number: parseInt(serial_number),
-          title: review.title,
-          content: decodedContent,
-          published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
-          restaurant: review.restaurant,
-          longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
-          latitude: parseInt(review.latitude) / Math.pow(10, 6),
-        },
-      ]);
-      if (error) {
-        console.log(error);
+          // Save to Supabase
+          const { error } = await supabase.from("publications").insert([
+            {
+              user_address: review.writer,
+              serial_number: parseInt(serial_number),
+              title: review.title,
+              content: decodedContent,
+              published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
+              restaurant: review.restaurant,
+              longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
+              latitude: parseInt(review.latitude) / Math.pow(10, 6),
+              votes: 0,
+            },
+          ]);
+          if (error) {
+            toast({
+              title: "Oops! There was an error",
+              description: error.message,
+              status: "error",
+              duration: 7000,
+              isClosable: true,
+            });
+            console.log(error);
+          }
+        });
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setIsModalOpen(false);
       }
-      // You can handle the event here, such as updating the UI
-      alert(
-        `New review published by ${user_address} with review number ${serial_number}`
-      );
-    });
-  }, [contract]);
+    };
+    handlePublishEvent();
+  }, [contract, account]);
 
   return (
-    <Box w={"100%"} bgColor="yellow.100" height="calc(100vh - 60px)">
+    <Box w={"100%"} bgColor="yellow.100" height="fit-content">
       <Box width={"1024px"} marginX="auto">
         <Flex
           justifyContent={"center"}
@@ -203,6 +238,7 @@ const Edit: NextPage = () => {
             </form>
           </Flex>
         </FormProvider>
+        <LoaderModal isOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
       </Box>
     </Box>
   );
