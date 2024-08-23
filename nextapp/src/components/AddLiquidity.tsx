@@ -2,28 +2,52 @@
 
 import React, { useState, useEffect, useCallback, FC } from "react";
 
-import { ethers } from "ethers";
-import USDT_ABI from "../abi/usdtAbi.json";
-import BSM_ABI from "../abi/bistromapAbi.json";
-import ROUTER_ABI from "../abi/uniswapRouterAbi.json";
+import { BigNumberish, BrowserProvider, ethers, JsonRpcSigner } from "ethers";
 
 import config from "@/constants/config";
 
-import { useAccount } from "@/context/AccountContext";
-import { Button, Flex, Input, Select, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Image,
+  Input,
+  Select,
+  Spacer,
+  Text,
+} from "@chakra-ui/react";
 import { Contract } from "ethers";
 
-const AddLiquidity: FC = () => {
-  const { signer, provider, account } = useAccount();
+interface AddLiquidityProps {
+  signer: JsonRpcSigner | null;
+  provider: BrowserProvider | null;
+  account: string | null;
+  bsmContract: Contract | null;
+  usdtContract: Contract | null;
+  routerContract: Contract | null;
+  pairContract: Contract | null;
+  bsmBalance: BigNumberish;
+  usdtBalance: BigNumberish;
+  lpBalance: BigNumberish;
+}
 
+const AddLiquidity: FC<AddLiquidityProps> = ({
+  signer,
+  provider,
+  account,
+  bsmContract,
+  usdtContract,
+  routerContract,
+  bsmBalance,
+  usdtBalance,
+  lpBalance,
+}) => {
   const [inputAmount, setInputAmount] = useState<string>("");
   const [outputAmount, setOutputAmount] = useState<string>("");
   const [isBsmToUsdt, setIsBsmToUsdt] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const [bsmContract, setBsmContract] = useState<Contract | null>(null);
-  const [usdtContract, setUsdtContract] = useState<Contract | null>(null);
-  const [routerContract, setRouterContract] = useState<Contract | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const validateInputAmount = (amount: string): boolean => {
     const numAmount = parseFloat(amount);
@@ -69,18 +93,10 @@ const AddLiquidity: FC = () => {
     }
   }, [getEstimatedOutput, inputAmount, isBsmToUsdt, provider]);
 
-  useEffect(() => {
-    if (!signer) return;
-
-    setBsmContract(new Contract(config.BSM_ADDRESS, BSM_ABI, signer));
-    setUsdtContract(new Contract(config.USDT_ADDRESS, USDT_ABI, signer));
-    setRouterContract(
-      new Contract(config.UNISWAP_V2_ROUTER, ROUTER_ABI, signer)
-    );
-  }, [signer]);
-
-  const handleSwap = async () => {
+  const handleAddLiquidity = async () => {
     if (!account || !provider) return;
+
+    setIsLoading(true);
 
     setError(null);
     setStatus("Initiating swap...");
@@ -174,8 +190,10 @@ const AddLiquidity: FC = () => {
         await tx.wait();
       }
       setStatus("Add Liquidity successful!");
+      setIsLoading(false);
     } catch (error) {
       console.error("Add Liquidity failed:", error);
+      setIsLoading(false);
       let errorMessage = "An unknown error occurred";
       if (error instanceof Error) {
         if (
@@ -197,40 +215,150 @@ const AddLiquidity: FC = () => {
   };
 
   return (
-    <>
-      <Select
-        onChange={(e) => setIsBsmToUsdt(e.target.value === "true")}
-        marginBottom={"10"}
-      >
-        <option value="true">BSM to USDT</option>
-        <option value="false">USDT to BSM</option>
-      </Select>
-      <Flex flexDir={"column"} gap={4} marginBottom={4}>
-        <Input
-          type="number"
-          value={inputAmount}
-          onChange={(e) => setInputAmount(e.target.value)}
-          placeholder={`${isBsmToUsdt ? "BSM" : "USDT"} amount`}
-        />
-        <Input
-          type="number"
-          value={outputAmount}
-          readOnly
-          placeholder={`${isBsmToUsdt ? "USDT" : "BSM"} amount`}
-        />
+    <Flex
+      minW="full"
+      marginTop={8}
+      marginBottom={100}
+      p={4}
+      bgColor="yellow.100"
+      rounded="lg"
+      borderWidth={1}
+    >
+      <Flex minW="full" flexDir="column">
+        <Flex marginBottom={4} alignItems="center">
+          <Image src="/images/logo.png" boxSize="40px" alt="BSM icon" />
+          <Text
+            fontSize="3xl"
+            fontWeight="bold"
+            color="blue.400"
+            marginLeft={2}
+          >
+            BSM-USDT Liquidity-Pool
+          </Text>
+        </Flex>
+
+        <Text marginBottom={3}>Add Liquidity to BSM-USDT Pool</Text>
+        <Text marginBottom={3}>Network: Sepolia Ethereum</Text>
+
+        <Flex>
+          <Flex
+            flex={1}
+            borderWidth={1}
+            borderRadius="md"
+            p={4}
+            mr={4}
+            flexDir="column"
+          >
+            <Text fontWeight="bold" fontSize="20px" mb={4}>
+              Add Liquidity
+            </Text>
+            <Flex mb={4} flexDir="column">
+              <Select
+                onChange={(e) => setIsBsmToUsdt(e.target.value === "true")}
+                marginBottom={"4"}
+                borderColor={"black"}
+              >
+                <option value="true">BSM to USDT</option>
+                <option value="false">USDT to BSM</option>
+              </Select>
+              <Flex
+                flexDir={"column"}
+                gap={4}
+                marginBottom={4}
+                justifyContent="center"
+              >
+                <Flex mb={2} alignItems="center">
+                  <Input
+                    type="number"
+                    value={inputAmount}
+                    onChange={(e) => setInputAmount(e.target.value)}
+                    placeholder={`${isBsmToUsdt ? "BSM" : "USDT"} amount`}
+                  />
+                  <Text minW={14} align="center">
+                    {isBsmToUsdt ? "BSM" : "USDT"}
+                  </Text>
+                </Flex>
+                <Flex mb={2} alignItems="center">
+                  <Input
+                    type="number"
+                    value={outputAmount}
+                    readOnly
+                    placeholder={`${isBsmToUsdt ? "USDT" : "BSM"} amount`}
+                  />
+                  <Text minW={14} align="center">
+                    {isBsmToUsdt ? "USDT" : "BSM"}
+                  </Text>
+                </Flex>
+              </Flex>
+              <Button
+                onClick={handleAddLiquidity}
+                disabled={!account || !isInputValid}
+                bgColor="yellow.400"
+                isLoading={isLoading}
+                isDisabled={isLoading}
+              >
+                Add Liquidity
+              </Button>
+            </Flex>
+          </Flex>
+          <Flex
+            flex={1}
+            borderWidth={1}
+            borderRadius="md"
+            p={4}
+            flexDir="column"
+          >
+            <Text fontWeight="bold" fontSize="20px" mb={4}>
+              Your Balance
+            </Text>
+            <Flex flexDir="column" align="stretch">
+              <Box marginBottom={4}>
+                <Text fontWeight="600">Available</Text>
+                <Flex marginTop={3} alignItems="center">
+                  <Image src="/images/logo.png" boxSize="20px" alt="BSM icon" />
+                  <Text paddingLeft={2}>BSM</Text>
+                  <Spacer />
+                  <Text>
+                    {Number(ethers.formatUnits(bsmBalance, 18)).toFixed(3)} BSM
+                  </Text>
+                </Flex>
+                <Flex marginTop={3} alignItems="center">
+                  <Image
+                    src="/images/UsdtLogo.png"
+                    boxSize="20px"
+                    alt="BSM icon"
+                  />
+                  <Text paddingLeft={2}>USDT</Text>
+                  <Spacer />
+                  <Text>
+                    $ {Number(ethers.formatUnits(usdtBalance, 18)).toFixed(3)}
+                  </Text>
+                </Flex>
+              </Box>
+              <Box marginBottom={4}>
+                <Text fontWeight="600">Current LP Tokens</Text>
+                <Flex marginTop={3} alignItems="center">
+                  <Image
+                    src="/images/logo2.png"
+                    boxSize="20px"
+                    alt="BSM icon"
+                  />
+                  <Text paddingLeft={2}>stBSM</Text>
+                  <Spacer />
+                  <Text>
+                    {Number(ethers.formatUnits(lpBalance, 18)).toFixed(3)} stBSM
+                  </Text>
+                </Flex>
+              </Box>
+            </Flex>
+          </Flex>
+        </Flex>
+        <Text marginTop={4} fontSize="20px" fontWeight="bold" align="center">
+          {status && <p>{status}</p>}
+          {error && <p>{error}</p>}
+        </Text>
       </Flex>
-      <Button
-        onClick={handleSwap}
-        disabled={!account || !isInputValid}
-        bgColor="yellow.400"
-      >
-        Add Liquidity to BSM-USDT Pool
-      </Button>
-      <Text fontSize="20px" fontWeight="bold" align="center">
-        {status && <p>{status}</p>}
-        {error && <p>{error}</p>}
-      </Text>
-    </>
+    </Flex>
   );
 };
 
