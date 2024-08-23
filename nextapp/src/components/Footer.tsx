@@ -5,7 +5,12 @@ import { FC } from "react";
 
 const Footer: FC = () => {
   return (
-    <Flex p={{ base: 5, md: 8 }} w="100%" justifyContent="center">
+    <Flex
+      p={{ base: 5, md: 8 }}
+      w="100%"
+      justifyContent="center"
+      style={{ borderTop: "1px solid #F2F2F2" }}
+    >
       <Stack
         w={1280}
         px={8}

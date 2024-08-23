@@ -10,6 +10,7 @@ const colors = {
     800: "#484542",
     900: "#1A202C",
   },
+  sky: "#00b1f3",
   lightGreen: "#ABC73D59",
   chocolate: {
     light: "#59412F",
