@@ -21,6 +21,7 @@
     "@react-google-maps/api": "^2.19.3",
     "@supabase/supabase-js": "^2.45.1",
     "@vis.gl/react-google-maps": "^1.1.0",
+    "@web3-react/core": "^8.2.3",
     "ethers": "^6.13.2",
     "framer-motion": "^11.3.8",
     "html-react-parser": "^5.1.12",

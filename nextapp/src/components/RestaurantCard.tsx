@@ -1,57 +1,73 @@
-import { StarIcon } from "@chakra-ui/icons";
-import { Badge, Box, Image } from "@chakra-ui/react";
+import { Badge, Box, Flex, Heading, Image, Text } from "@chakra-ui/react";
+import { IoRestaurantOutline } from "react-icons/io5";
+import { useRouter } from "next/navigation";
 
-const RestaurantCard = () => {
-  const restaurant = {
-    imageUrl:
-      "https://plus.unsplash.com/premium_photo-1661953124283-76d0a8436b87?q=80&w=2088&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    imageAlt: "Famous Restaurant in xxx",
-    title:
-      "Modern Restaurant in city center in the heart of historic Los Angeles",
-    reviewCount: 34,
-    rating: 4,
-  };
-
+const RestaurantCard = ({ card }: Publication) => {
+  const cleanMessage = card.content.replace(/<img\b[^>]*>/gi, "");
+  const firstImgSrcMatch = card.content.match(/<img[^>]+src="([^">]+)"/i);
+  const router = useRouter();
+  // Extract the src value (if found)
+  const firstImgSrc = firstImgSrcMatch ? firstImgSrcMatch[1] : null;
+  const getFormattedDate = (d: string) =>
+    Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(d));
   return (
-    <Box maxW="sm" borderWidth="1px" borderRadius="lg" overflow="hidden">
-      <Image src={restaurant.imageUrl} alt={restaurant.imageAlt} />
+    <Box
+      borderRadius="lg"
+      overflow="hidden"
+      h={"500px"}
+      cursor="pointer"
+      onClick={() => router.push(`/posts/${card.serial_number}`)}
+    >
+      <Box>
+        <Image
+          w={"full"}
+          height={"300"}
+          rounded="lg"
+          src={firstImgSrc}
+          alt={card.restaurant}
+        />
+      </Box>
 
-      <Box p="6">
-        <Box display="flex" alignItems="baseline">
-          <Badge borderRadius="full" px="2" colorScheme="teal">
-            New
+      <Box mt={4}>
+        <Box display="flex" alignItems="baseline"></Box>
+        <Box float={"right"} fontWeight={"bold"}>
+          <Badge
+            py={1}
+            px={2}
+            bgColor={"pink.500"}
+            color="white"
+            rounded="full"
+            fontWeight={"bold"}
+          >
+            {card.votes ? card.votes : "0"} Voted
           </Badge>
+        </Box>
+        <Box mt="1" fontWeight="semibold">
+          <Heading as="h4" fontSize={"lg"} w={"75%"}>
+            {card.title}
+          </Heading>
+
+          <Flex mt={2} gap={3} alignItems={"center"}>
+            <IoRestaurantOutline /> {card.restaurant},{" "}
+            <Text fontSize={"small"} alignSelf={"end"}>
+              Published at {getFormattedDate(card.published_at)}
+            </Text>
+          </Flex>
         </Box>
 
         <Box
-          mt="1"
-          fontWeight="semibold"
-          as="h4"
-          lineHeight="tight"
-          noOfLines={1}
-        >
-          {restaurant.title}
-        </Box>
-
-        <Box>
-          <Box as="span" color="gray.600" fontSize="sm">
-            / wk
-          </Box>
-        </Box>
-
-        <Box display="flex" mt="2" alignItems="center">
-          {Array(5)
-            .fill("")
-            .map((_, i) => (
-              <StarIcon
-                key={i}
-                color={i < restaurant.rating ? "teal.500" : "gray.300"}
-              />
-            ))}
-          <Box as="span" ml="2" color="gray.600" fontSize="sm">
-            {restaurant.reviewCount} reviews
-          </Box>
-        </Box>
+          mt={2}
+          fontSize={"sm"}
+          height={"150px"}
+          color="gray.600"
+          lineHeight={"19px"}
+          overflow={"hidden"}
+          dangerouslySetInnerHTML={{ __html: cleanMessage }}
+        ></Box>
       </Box>
     </Box>
   );

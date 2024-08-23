@@ -1,5 +1,6 @@
 export interface ConfigEnvType {
   UNISWAP_V2_ROUTER: string;
+  UNISWAP_V2_PAIR: string;
   USDT_ADDRESS: string;
   BSM_ADDRESS: string;
   chainLabel: string;
@@ -19,6 +20,7 @@ export const configs: {
 } = {
   local: {
     UNISWAP_V2_ROUTER: "0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008",
+    UNISWAP_V2_PAIR: "0x404a2Ab304FC9317B0f1Ac38299035cb7b85373B",
     USDT_ADDRESS: "0xE1fC1ae9816A03e5CDf36D74E63b62f96BC7467b", // Sepolia USDT address
     BSM_ADDRESS: "0x1E769D810D18B4f86d415E6b6e804EfD1d15188f",
     chainLabel: "Sepolia Testnet",

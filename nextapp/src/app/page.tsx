@@ -1,12 +1,12 @@
 "use client";
 
-import RestaurantCard from "@/components/RestaurantCard";
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { usePathname } from "next/navigation"; // 현재 경로를 확인하는 훅
 import BannerSlider from "../components/BannerSlider"; // 배너 슬라이더 컴포넌트
 import "@/styles/globals.css"; // 전역 스타일
 import OwnerCheckModal from "@/components/OwnerCheckModal";
 import { useState } from "react";
+import RestaurantCardList from "@/components/RestaurantCardList";
 
 export default function Home() {
   const pathname = usePathname(); // 현재 경로를 가져옵니다
@@ -16,26 +16,27 @@ export default function Home() {
   return (
     <Box w={"100%"}>
       <Box
-        h={500}
+        mb={4}
+        h={400}
         bgColor={"yellow.200"}
         pt={"100px"}
         textAlign={"center"}
         color={"gray.900"}
       >
-        <Box lineHeight={"32px"} fontSize={"x-large"} fontWeight={"semibold"}>
+        <Box lineHeight={"24px"} fontSize={"large"} fontWeight={"semibold"}>
           A Web 3.0 Review Platform for the people who want better food
           experience
         </Box>
         <Box
           color="gray.900"
           fontWeight={700}
-          fontSize={"60px"}
-          lineHeight={"76px"}
-          mt={4}
+          fontSize={"48px"}
+          lineHeight={"56px"}
+          mt={2}
         >
           PUBLISH YOUR THOUGHTS AND SHARE
         </Box>
-        <Text fontSize={"large"} mt={8} mb={6}>
+        <Text fontSize={"md"} mt={6} mb={4}>
           Welcome to Bistromap, where we take your cravings to a whole new
           level! <br />
           Our mouthwatering burgers are made from 100% beef and are served on
@@ -63,14 +64,14 @@ export default function Home() {
           </Button>
         </Flex>
       </Box>
-      <BannerSlider setIsModalOpen={setIsModalOpen} />
+      <section>
+        <BannerSlider setIsModalOpen={setIsModalOpen} />
+      </section>
+      <section style={{ marginTop: 40 }}>
+        <RestaurantCardList />
+      </section>
+      <Box h="200px" bgGradient="linear(to-r, yellow.200, pink.500)"></Box>
       <OwnerCheckModal isOpen={isModalOpen} />
-
-      <Flex minWidth={"1440px"} justifyContent={"center"}>
-        <RestaurantCard />
-        <RestaurantCard />
-        <RestaurantCard />
-      </Flex>
     </Box>
   );
 }
