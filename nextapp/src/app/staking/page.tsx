@@ -225,7 +225,14 @@ export default function BSMstake() {
   };
 
   return (
-    <Box maxWidth="800px" margin="auto" p={4}>
+    <Box
+      maxWidth="800px"
+      margin={100}
+      p={4}
+      bgColor="yellow.100"
+      rounded="lg"
+      borderWidth={1}
+    >
       <VStack spacing={6} align="stretch">
         <HStack>
           <Image src="/images/logo.png" boxSize="40px" alt="BSM icon" />
