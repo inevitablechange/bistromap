@@ -49,19 +49,6 @@ const STAKING_CONTRACT_ABI = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_amount",
-        type: "uint256",
-      },
-    ],
-    name: "stake",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -79,13 +66,6 @@ const STAKING_CONTRACT_ABI = [
     ],
     name: "Staked",
     type: "event",
-  },
-  {
-    inputs: [],
-    name: "unstake",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
   },
   {
     anonymous: false,
@@ -114,25 +94,6 @@ const STAKING_CONTRACT_ABI = [
         internalType: "contract BSM",
         name: "",
         type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_user",
-        type: "address",
-      },
-    ],
-    name: "calculateReward",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -194,6 +155,74 @@ const STAKING_CONTRACT_ABI = [
     inputs: [
       {
         internalType: "address",
+        name: "_user",
+        type: "address",
+      },
+    ],
+    name: "calculateReward",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "staker",
+        type: "address",
+      },
+    ],
+    name: "getStakeDetails",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint256",
+            name: "amount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "timestamp",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "lastClaimTimestamp",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct StakingContract.Stake",
+        name: "",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_amount",
+        type: "uint256",
+      },
+    ],
+    name: "stake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
         name: "",
         type: "address",
       },
@@ -232,11 +261,31 @@ const STAKING_CONTRACT_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "unstake",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
-const STAKING_CONTRACT_ADDRESS = "0xe0BCdC123cb6AD1D5B2Fc22880D4Ea8627FE7D60"; // 실제 컨트랙트 주소로 교체
+const STAKING_CONTRACT_ADDRESS = "0x349922B6f443D55CC9445C483aD9deffcF2a5fAc"; // 실제 컨트랙트 주소로 교체
 
 // BSM 토큰 ABI (예시, 실제 ABI로 교체 필요)
 const BSM_TOKEN_ABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "minter",
+        type: "address",
+      },
+    ],
+    name: "addMinter",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [
       {
@@ -463,6 +512,19 @@ const BSM_TOKEN_ABI = [
   {
     inputs: [],
     name: "release",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "minter",
+        type: "address",
+      },
+    ],
+    name: "removeMinter",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -803,8 +865,21 @@ const BSM_TOKEN_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "whoIsOwner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
-const BSM_TOKEN_ADDRESS = "0x79Ae9522a82d9c30159B18C6831d6540F68811fB"; // 실제 BSM 토큰 주소로 교체
+const BSM_TOKEN_ADDRESS = "0xd3F42E14536185Dd5a369EBCAB62A1282ca9deDB"; // 실제 BSM 토큰 주소로 교체
 
 export default function BSMstake() {
   const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);

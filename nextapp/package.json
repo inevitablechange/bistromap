@@ -17,6 +17,7 @@
     "@emotion/styled": "^11.13.0",
     "@fontsource/plus-jakarta-sans": "^5.0.20",
     "@googlemaps/js-api-loader": "^1.16.8",
+    "@pinata/sdk": "^2.1.0",
     "@react-google-maps/api": "^2.19.3",
     "@supabase/supabase-js": "^2.45.1",
     "@vis.gl/react-google-maps": "^1.1.0",
