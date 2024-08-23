@@ -7,6 +7,8 @@ import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
 import { rewardContractAddress } from "@/constants";
+import styles from "../ClandarComponent.module.css";
+
 interface AttendanceData {
   [key: string]: boolean;
 }
@@ -70,7 +72,6 @@ const CalendarComponent: React.FC = () => {
           .markAttendance()
           .send({ from: accounts[0] });
 
-        // Mark attendance in Supabase
         const { error } = await supabase
           .from("attendance")
           .upsert([{ date: formattedDate, is_present: isPresent }]);
@@ -92,12 +93,19 @@ const CalendarComponent: React.FC = () => {
 
   const tileClassName = ({ date }: { date: Date }) => {
     const formattedDate = date.toISOString().split("T")[0];
-    return attendance[formattedDate] ? "present" : "";
+    return attendance[formattedDate] ? styles.present : "";
   };
 
   const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
     const today = new Date();
     return view === "month" && date.toDateString() !== today.toDateString();
+  };
+
+  const tileContent = ({ date }: { date: Date }) => {
+    const formattedDate = date.toISOString().split("T")[0];
+    return attendance[formattedDate] ? (
+      <div className={styles.stamp}>Complete</div>
+    ) : null;
   };
 
   const handleAttendanceCheck = async () => {
@@ -110,7 +118,6 @@ const CalendarComponent: React.FC = () => {
           .markAttendance()
           .send({ from: accounts[0] });
 
-        // Mark attendance in Supabase
         const { error } = await supabase
           .from("attendance")
           .upsert([
@@ -133,17 +140,25 @@ const CalendarComponent: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className={styles.calendarContainer}>
+      <div className={styles.headerText}>Daily Check</div>
       <Calendar
-        onChange={handleDateChange as (value: any) => void} // Cast to any to bypass type error
+        onChange={handleDateChange as (value: any) => void}
         value={value}
         tileClassName={tileClassName}
-        tileDisabled={tileDisabled} // Disable all dates except today
+        tileDisabled={tileDisabled}
+        tileContent={tileContent}
+        locale="en-US"
+        className={styles.reactCalendar}
       />
-      <button onClick={handleAttendanceCheck} disabled={loading}>
-        {loading ? "Processing..." : ""}
+      <button
+        onClick={handleAttendanceCheck}
+        disabled={loading}
+        className={styles.attendanceButton}
+      >
+        {loading ? "Processing..." : "Mark Attendance"}
       </button>
-      {message && <p>{message}</p>}
+      {message && <p className={styles.message}>{message}</p>}
     </div>
   );
 };
