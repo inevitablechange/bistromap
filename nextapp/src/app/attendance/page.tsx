@@ -20,6 +20,27 @@ const CalendarComponent: React.FC = () => {
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("date, is_present");
+
+      if (error) {
+        console.error("Error fetching attendance data:", error);
+      } else {
+        const attendanceMap: AttendanceData = {};
+        data.forEach((record) => {
+          attendanceMap[record.date] = record.is_present;
+        });
+        setAttendance(attendanceMap);
+      }
+    };
+
+    fetchAttendanceData();
+  }, []);
 
   useEffect(() => {
     const initWeb3 = async () => {
@@ -49,17 +70,43 @@ const CalendarComponent: React.FC = () => {
     initWeb3();
   }, []);
 
+  useEffect(() => {
+    const checkTodayAttendance = async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("is_present")
+        .eq("date", today)
+        .single();
+
+      if (error) {
+        console.error("Error fetching attendance status from Supabase:", error);
+      } else {
+        setHasMarkedToday(data?.is_present ?? false);
+      }
+    };
+
+    checkTodayAttendance();
+  }, []);
+
   const handleDateChange = async (value: Date | Date[] | null) => {
     if (Array.isArray(value) || value === null) return;
 
     const selectedDate = value as Date;
+    const today = new Date();
+    const formattedSelectedDate = selectedDate.toISOString().split("T")[0];
+    const formattedToday = today.toISOString().split("T")[0];
+
+    if (formattedSelectedDate !== formattedToday) {
+      return; // Do not allow attendance marking for dates other than today
+    }
+
     setValue(selectedDate);
-    const formattedDate = selectedDate.toISOString().split("T")[0];
-    const isPresent = !attendance[formattedDate];
+    const isPresent = !attendance[formattedToday];
 
     setAttendance((prev) => ({
       ...prev,
-      [formattedDate]: isPresent,
+      [formattedToday]: isPresent,
     }));
 
     if (rewardContract && web3) {
@@ -67,20 +114,20 @@ const CalendarComponent: React.FC = () => {
       setMessage(null);
       try {
         const accounts = await web3.eth.getAccounts();
-        console.log("accounts::", accounts);
         await rewardContract.methods
           .markAttendance()
           .send({ from: accounts[0] });
 
         const { error } = await supabase
           .from("attendance")
-          .upsert([{ date: formattedDate, is_present: isPresent }]);
+          .upsert([{ date: formattedToday, is_present: isPresent }]);
 
         if (error) {
           console.error("Error updating attendance in Supabase:", error);
           setMessage("Error updating attendance in Supabase.");
         } else {
           setMessage("Attendance updated successfully in Supabase!");
+          setHasMarkedToday(true); // Mark today's attendance as completed
         }
       } catch (error) {
         console.error("Error marking attendance:", error);
@@ -96,20 +143,23 @@ const CalendarComponent: React.FC = () => {
     return attendance[formattedDate] ? styles.present : "";
   };
 
+  const tileContent = ({ date }: { date: Date }) => {
+    const formattedDate = date.toISOString().split("T")[0];
+    const today = new Date().toISOString().split("T")[0];
+    return attendance[formattedDate] ? (
+      <div className={styles.stamp}>
+        {formattedDate === today ? "Complete" : "✓"}
+      </div>
+    ) : null;
+  };
+
   const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
     const today = new Date();
     return view === "month" && date.toDateString() !== today.toDateString();
   };
 
-  const tileContent = ({ date }: { date: Date }) => {
-    const formattedDate = date.toISOString().split("T")[0];
-    return attendance[formattedDate] ? (
-      <div className={styles.stamp}>Complete</div>
-    ) : null;
-  };
-
   const handleAttendanceCheck = async () => {
-    if (rewardContract && web3) {
+    if (rewardContract && web3 && !hasMarkedToday) {
       setLoading(true);
       setMessage(null);
       try {
@@ -129,6 +179,7 @@ const CalendarComponent: React.FC = () => {
           setMessage("Error updating attendance in Supabase.");
         } else {
           setMessage("Attendance updated successfully in Supabase!");
+          setHasMarkedToday(true);
         }
       } catch (error) {
         console.error("Error marking attendance:", error);
@@ -153,10 +204,14 @@ const CalendarComponent: React.FC = () => {
       />
       <button
         onClick={handleAttendanceCheck}
-        disabled={loading}
+        disabled={loading || hasMarkedToday}
         className={styles.attendanceButton}
       >
-        {loading ? "Processing..." : "Mark Attendance"}
+        {loading
+          ? "Processing..."
+          : hasMarkedToday
+          ? "Already Checked"
+          : "Mark Attendance"}
       </button>
       {message && <p className={styles.message}>{message}</p>}
     </div>
