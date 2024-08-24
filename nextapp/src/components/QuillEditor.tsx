@@ -1,8 +1,11 @@
 import { NextPage } from "next";
 import dynamic from "next/dynamic";
-import { Dispatch, SetStateAction, useMemo, useRef } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef } from "react";
 import "react-quill/dist/quill.snow.css";
 import axios from "axios";
+interface Element {
+  style: CSSStyleDeclaration;
+}
 
 const ReactQuill = dynamic(
   async () => {
@@ -42,7 +45,15 @@ const QuillEditor: NextPage<QuillEditorInterface> = ({
   setLength,
 }) => {
   const quillRef = useRef<any>(null);
-
+  useEffect(() => {
+    setTimeout(() => {
+      const elems = document.querySelectorAll<HTMLElement>(".ql-snow");
+      elems.forEach((el) => {
+        el.style.border = "none";
+      });
+      elems[1].style.fontSize = "20px";
+    }, 500);
+  }, []);
   const uploadToPinata = async (imageFile: File) => {
     const formData = new FormData();
     formData.append("file", imageFile);
