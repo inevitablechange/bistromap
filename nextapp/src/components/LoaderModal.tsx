@@ -1,5 +1,6 @@
 import {
   Button,
+  Flex,
   Heading,
   Modal,
   ModalBody,
@@ -28,15 +29,22 @@ const LoaderModal: FC<LoaderModalProps> = ({ isOpen, setIsModalOpen }) => {
       <ModalContent>
         <ModalHeader></ModalHeader>
         <ModalBody pb={6}>
-          <Heading>We are processing your request</Heading>
-          <Text>Please wait...</Text>
-          <Spinner
-            thickness="6px"
-            speed="0.65s"
-            emptyColor="gray.200"
-            color="yellow.400"
-            size="xl"
-          />
+          <Flex
+            gap={"16px"}
+            flexDir="column"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Heading fontSize="20px">We are processing your request</Heading>
+            <Text>Please wait...</Text>
+            <Spinner
+              thickness="6px"
+              speed="0.65s"
+              emptyColor="gray.200"
+              color="yellow.400"
+              size="xl"
+            />
+          </Flex>
         </ModalBody>
         <ModalFooter>
           <Button bgColor={"indigoNight"} mr={3} onClick={handleClose}>

@@ -195,9 +195,13 @@ input[type="text"] {
   background-color: #fff;
   font-size: 20px;
 }
-
-button.react-calendar__tile {
-  width: 88px;
-  height: 88px;
-  background: red;
+.quill .ql-toolbar.ql-snow {
+  border: none !important;
+}
+.ql-toolbar.ql-snow,
+.ql-container.ql-snow {
+  border: none !important;
+}
+.no-border {
+  border: none;
 }
