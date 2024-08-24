@@ -2,53 +2,41 @@
 
 import { useState, useEffect } from "react";
 import { Contract, ethers } from "ethers";
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Button,
-  Input,
-  Flex,
-  Image,
-  Link,
-  useToast,
-  Spacer,
-} from "@chakra-ui/react";
+import { Button, Flex } from "@chakra-ui/react";
 
 import STAKING_CONTRACT_ABI from "../../abi/Staking.json";
+import LPTOKEN_STAKING_CONTRACT_ABI from "../../abi/LpTokenStaking.json";
 import BSM_TOKEN_ABI from "../../abi/BsmToken.json";
-import { useAccount } from "@/context/AccountContext";
 
+import { lpTokenStakingContractAddress as LPTOKEN_STAKING_CONTRACT_ADDRESS } from "../../constants/index";
 import { stakingContractAddress as STAKING_CONTRACT_ADDRESS } from "../../constants/index";
 import { bsmContractAddress as BSM_TOKEN_ADDRESS } from "../../constants/index";
+import { useAccount } from "@/context/AccountContext";
+
+import Staking from "@/components/Staking";
+import LpTokenStaking from "@/components/LpTokenStaking";
 
 export default function BSMstake() {
   const { signer } = useAccount();
 
+  const [activeComponent, setActiveComponent] =
+    useState<string>("lpTokenStake");
   const [balance, setBalance] = useState<{ BSM: number }>({ BSM: 0 });
-  const [stakeAmount, setStakeAmount] = useState<string>("");
-  const [reward, setReward] = useState<number>(0);
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [bsmContract, setBsmContract] = useState<Contract | null>(null);
+
+  // const related to Lp tokens Staking
+  const [lpTokenStakedAmount, setLpTokenStakedAmount] = useState<number>(0);
+  const [lpTokenStakingContract, setLpTokenStakingContract] =
+    useState<Contract | null>(null);
+  const [lpTokenReward, setLpTokenReward] = useState<number>(0);
+
+  // consts related to Staking
   const [stakedAmount, setStakedAmount] = useState<number>(0);
   const [stakedTimestamp, setStakedTimestamp] = useState<number>(0);
   const [canUnstake, setCanUnstake] = useState<boolean>(false);
   const [stakingContract, setStakingContract] = useState<Contract | null>(null);
-  const [bsmToken, setBsmToken] = useState<Contract | null>(null);
-
-  useEffect(() => {
-    if (!signer) return;
-
-    initializeEthers();
-  }, [signer]);
-
-  useEffect(() => {
-    if (isConnected) {
-      fetchBalances();
-      fetchReward();
-      fetchStakedInfo();
-    }
-  }, [isConnected]);
+  const [reward, setReward] = useState<number>(0);
 
   const initializeEthers = async () => {
     try {
@@ -57,6 +45,13 @@ export default function BSMstake() {
         STAKING_CONTRACT_ABI,
         signer
       );
+
+      const lpTokenStakingContract = new ethers.Contract(
+        LPTOKEN_STAKING_CONTRACT_ADDRESS,
+        LPTOKEN_STAKING_CONTRACT_ABI,
+        signer
+      );
+
       const bsmToken = new ethers.Contract(
         BSM_TOKEN_ADDRESS,
         BSM_TOKEN_ABI,
@@ -64,7 +59,8 @@ export default function BSMstake() {
       );
 
       setStakingContract(stakingContract);
-      setBsmToken(bsmToken);
+      setLpTokenStakingContract(lpTokenStakingContract);
+      setBsmContract(bsmToken);
       setIsConnected(true);
     } catch (error) {
       console.error("Failed to connect to Ethereum:", error);
@@ -72,10 +68,10 @@ export default function BSMstake() {
   };
 
   const fetchBalances = async () => {
-    if (signer && bsmToken) {
+    if (signer && bsmContract) {
       try {
         const address = await signer.getAddress();
-        const BSMBalance = await bsmToken.balanceOf(address);
+        const BSMBalance = await bsmContract.balanceOf(address);
         setBalance({
           BSM: parseFloat(ethers.formatEther(BSMBalance)),
         });
@@ -90,6 +86,20 @@ export default function BSMstake() {
       try {
         const address = await signer.getAddress();
         const rewardAmount = await stakingContract.calculateReward(address);
+        setLpTokenReward(parseFloat(ethers.formatEther(rewardAmount)));
+      } catch (error) {
+        console.error("Failed to fetch reward:", error);
+      }
+    }
+  };
+
+  const fetchLpTokenReward = async () => {
+    if (signer && lpTokenStakingContract) {
+      try {
+        const address = await signer.getAddress();
+        const rewardAmount = await lpTokenStakingContract.calculateReward(
+          address
+        );
         setReward(parseFloat(ethers.formatEther(rewardAmount)));
       } catch (error) {
         console.error("Failed to fetch reward:", error);
@@ -117,190 +127,89 @@ export default function BSMstake() {
     }
   };
 
-  const handleStake = async () => {
-    if (!stakingContract || !bsmToken || !stakeAmount) return;
-    try {
-      const amount = ethers.parseEther(stakeAmount);
-      const minStakeAmount = ethers.parseEther("1");
-
-      // Convert to BigInt for comparison
-      const minStakeAmountBigInt = BigInt(minStakeAmount.toString());
-      const amountBigInt = BigInt(amount.toString());
-
-      if (amountBigInt < minStakeAmountBigInt) {
-        throw new Error("Minimum stake amount is 1 BSM");
+  const fetchLpTokenStakedInfo = async () => {
+    if (signer && lpTokenStakingContract) {
+      try {
+        const address = await signer.getAddress();
+        const lpTokenStakedInfo = await lpTokenStakingContract.getStakingAmount(
+          address
+        );
+        setLpTokenStakedAmount(
+          parseFloat(ethers.formatEther(lpTokenStakedInfo.amount))
+        );
+      } catch (error) {
+        console.error("Failed to fetch staked information:", error);
       }
-
-      // Proceed with the staking process
-      const approveTx = await bsmToken.approve(
-        STAKING_CONTRACT_ADDRESS,
-        amount
-      );
-      await approveTx.wait();
-
-      const tx = await stakingContract.stake(amount, { gasLimit: 300000 });
-      await tx.wait();
-      fetchBalances();
-      fetchStakedInfo();
-      setStakeAmount("");
-    } catch (error) {
-      console.error("Staking failed:", error);
     }
   };
 
-  const handleUnstake = async () => {
-    if (!stakingContract || !canUnstake) return;
-    try {
-      const tx = await stakingContract.unstake();
-      await tx.wait();
+  useEffect(() => {
+    if (!signer) return;
+
+    initializeEthers();
+  }, [signer]);
+
+  useEffect(() => {
+    if (isConnected) {
+      //fetch bsm token balance
       fetchBalances();
+
+      //fetch lptoken staking info
+      fetchLpTokenReward();
+      fetchLpTokenStakedInfo();
+
+      //fetch staking info
+      fetchReward();
       fetchStakedInfo();
-    } catch (error) {
-      console.error("Unstaking failed:", error);
     }
-  };
+  }, [isConnected]);
 
   return (
-    <Box maxWidth="800px" margin="auto" p={4} bg="yellow.50">
-      <VStack spacing={6} align="stretch">
-        <HStack>
-          <Image src="/images/logo.png" boxSize="50px" alt="BSM icon" />
-          <Text
-            fontSize="4xl"
-            fontWeight="bold"
-            bgGradient="linear(to-r, #4682b4, #87ceeb)"
-            bgClip="text"
-          >
-            BSM Staking
-          </Text>
-        </HStack>
-
-        <Text fontSize="lg" color="gray.700">
-          Stake your BSM tokens to earn rewards. APY is 12%.
-        </Text>
-
-        <HStack>
-          <Text fontSize="lg">Network: Sepolia Ethereum</Text>
-          <Link color="blue.600" href="#" isExternal fontSize="lg"></Link>
-        </HStack>
-
-        <Box borderWidth={1} borderRadius="md" p={4} bg="yellow.100">
-          <Text fontWeight="bold" mb={2} fontSize="xl">
-            Minimum Stake Requirement
-          </Text>
-          <Text color="red.600" fontSize="lg">
-            To participate Voting, you need at least 1000 BSM.
-          </Text>
-          <Text color="red.600" fontSize="lg">
-            Staking can only be unstaked after at least 24 weeks.
-          </Text>
-        </Box>
-
-        <Flex>
-          <Box
-            flex={1}
-            borderWidth={1}
-            borderRadius="md"
-            p={4}
-            mr={4}
-            bg="yellow.100"
-          >
-            <Text fontWeight="bold" mb={4} fontSize="xl">
-              Manage
-            </Text>
-            <Text color="gray.700" mb={4} fontSize="lg">
-              Manage your position in the BSM Staking contract.
-            </Text>
-            <HStack mb={4}>
-              <Button
-                flex={1}
-                onClick={handleStake}
-                isDisabled={!stakeAmount || parseFloat(stakeAmount) < 1}
-                fontSize="lg"
-                bg="yellow.300"
-                _hover={{ bg: "yellow.400" }}
-              >
-                Stake
-              </Button>
-              <Button
-                flex={1}
-                variant="outline"
-                onClick={handleUnstake}
-                isDisabled={!canUnstake}
-                fontSize="lg"
-                bg="yellow.300"
-                _hover={{ bg: "yellow.400" }}
-              >
-                Unstake
-              </Button>
-            </HStack>
-            <Box borderWidth={1} borderRadius="md" p={4} bg="yellow.100">
-              <Text mb={2} fontSize="lg">
-                Stake
-              </Text>
-              <HStack mb={2}>
-                <Input
-                  placeholder="0.0"
-                  value={stakeAmount}
-                  onChange={(e) => setStakeAmount(e.target.value)}
-                  type="number"
-                  min="1"
-                  fontSize="lg"
-                />
-                <Text fontSize="lg">BSM</Text>
-              </HStack>
-            </Box>
-          </Box>
-          <Box flex={1} borderWidth={1} borderRadius="md" p={4} bg="yellow.100">
-            <Text fontWeight="bold" mb={4} fontSize="xl">
-              Your Balance
-            </Text>
-            <VStack align="stretch" spacing={4}>
-              <Box>
-                <Text fontSize="lg">Available</Text>
-                <HStack>
-                  <Image src="/images/logo.png" boxSize="20px" alt="BSM icon" />
-                  <Text fontSize="lg">BSM</Text>
-                  <Spacer />
-                  <Text fontSize="lg">
-                    {balance.BSM} ${balance.BSM.toFixed(2)}
-                  </Text>
-                </HStack>
-              </Box>
-              <Box>
-                <Text fontSize="lg">Staked</Text>
-                <HStack>
-                  <Image
-                    src="/images/logo2.png"
-                    boxSize="20px"
-                    alt="BSM icon"
-                  />
-                  <Text fontSize="lg">BSM</Text>
-                  <Spacer />
-                  <Text fontSize="lg">
-                    {stakedAmount.toFixed(2)} ${stakedAmount.toFixed(2)}
-                  </Text>
-                </HStack>
-              </Box>
-              <Box>
-                <Text fontSize="lg">Rewards</Text>
-                <HStack>
-                  <Image
-                    src="/images/logo.png"
-                    boxSize="20px"
-                    alt="Reward icon"
-                  />
-                  <Text fontSize="lg">BSM</Text>
-                  <Spacer />
-                  <Text fontSize="lg">
-                    {reward.toFixed(2)} ${reward.toFixed(2)}
-                  </Text>
-                </HStack>
-              </Box>
-            </VStack>
-          </Box>
-        </Flex>
-      </VStack>
-    </Box>
+    <Flex flexDir={"column"} padding={"20"} minWidth={"800px"} align={"center"}>
+      <Flex gap={4} justifyContent={"center"} minW={"full"}>
+        <Button
+          bgColor={
+            activeComponent === "lpTokenStake" ? "yellow.400" : "gray.100"
+          }
+          onClick={() => setActiveComponent("lpTokenStake")}
+          flex={1}
+        >
+          Stake lpBSM Token
+        </Button>
+        <Button
+          bgColor={
+            activeComponent === "lpTokenStake" ? "gray.100" : "yellow.400"
+          }
+          onClick={() => setActiveComponent("Stake")}
+          flex={1}
+        >
+          Stake BSM Token
+        </Button>
+      </Flex>
+      {activeComponent === "lpTokenStake" ? (
+        <LpTokenStaking
+          lpTokenStakingContract={lpTokenStakingContract}
+          bsmContract={bsmContract}
+          LPTOKEN_STAKING_CONTRACT_ADDRESS={LPTOKEN_STAKING_CONTRACT_ADDRESS}
+          fetchBalances={fetchBalances}
+          fetchLpTokenStakedInfo={fetchLpTokenStakedInfo}
+          balance={balance}
+          lpTokenStakedAmount={lpTokenStakedAmount}
+          lpTokenReward={lpTokenReward}
+        />
+      ) : (
+        <Staking
+          stakingContract={stakingContract}
+          bsmContract={bsmContract}
+          STAKING_CONTRACT_ADDRESS={STAKING_CONTRACT_ADDRESS}
+          fetchBalances={fetchBalances}
+          fetchStakedInfo={fetchStakedInfo}
+          canUnstake={canUnstake}
+          balance={balance}
+          stakedAmount={stakedAmount}
+          reward={reward}
+        />
+      )}
+    </Flex>
   );
 }
