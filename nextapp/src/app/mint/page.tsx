@@ -138,7 +138,7 @@ const MintPage: React.FC = () => {
   }, [account]);
 
   return (
-    <Box height="calc(100vh - 60px)" width={"1280px"}>
+    <Box mb={10} width={"1280px"}>
       <Box bgColor={"lightGreen"} textAlign={"center"} py={16}>
         <Heading as="h1">Mint Your NFT</Heading>
       </Box>
