@@ -1,6 +1,6 @@
 import { extendTheme } from "@chakra-ui/react";
 import "@fontsource/plus-jakarta-sans"; // 설치한 폰트를 import
-
+import "@fontsource-variable/outfit";
 // Import the weights and subsets, add any other config here as well
 const colors = {
   primary: "#F3CD00",
@@ -33,7 +33,7 @@ const theme = extendTheme({
   colors,
   fonts: {
     heading: `'Plus Jakarta Sans', sans-serif`,
-    body: `'Plus Jakarta Sans', sans-serif`,
+    body: `'Plus Jakarta Sans', 'Outfit Variable',sans-serif`,
   },
   components: {
     Button: {

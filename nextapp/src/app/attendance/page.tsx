@@ -7,8 +7,8 @@ import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
 import { rewardContractAddress } from "@/constants";
-import styles from "../../styles/CalendarComponent.module.css";
-
+import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import "./calendar.css";
 interface AttendanceData {
   [key: string]: boolean;
 }
@@ -140,16 +140,14 @@ const CalendarComponent: React.FC = () => {
 
   const tileClassName = ({ date }: { date: Date }) => {
     const formattedDate = date.toISOString().split("T")[0];
-    return attendance[formattedDate] ? styles.present : "";
+    return "";
   };
 
   const tileContent = ({ date }: { date: Date }) => {
     const formattedDate = date.toISOString().split("T")[0];
     const today = new Date().toISOString().split("T")[0];
     return attendance[formattedDate] ? (
-      <div className={styles.stamp}>
-        {formattedDate === today ? "Complete" : "✓"}
-      </div>
+      <div>{formattedDate === today ? "Complete" : "✓"}</div>
     ) : null;
   };
 
@@ -191,30 +189,91 @@ const CalendarComponent: React.FC = () => {
   };
 
   return (
-    <div className={styles.calendarContainer}>
-      <div className={styles.headerText}>Daily Check</div>
-      <Calendar
-        onChange={handleDateChange as (value: any) => void}
-        value={value}
-        tileClassName={tileClassName}
-        tileDisabled={tileDisabled}
-        tileContent={tileContent}
-        locale="en-US"
-        className={styles.reactCalendar}
-      />
-      <button
-        onClick={handleAttendanceCheck}
-        disabled={loading || hasMarkedToday}
-        className={styles.attendanceButton}
-      >
-        {loading
-          ? "Processing..."
-          : hasMarkedToday
-          ? "Already Checked"
-          : "Mark Attendance"}
-      </button>
-      {message && <p className={styles.message}>{message}</p>}
-    </div>
+    <Box w="full">
+      <section>
+        <Flex bgColor={"cream"}>
+          <Box
+            backgroundImage="url('/assets/peaches.jpg')"
+            height={"400px"}
+            width={"200px"}
+            backgroundPosition={"-40px 0"}
+            backgroundSize={"cover"}
+          ></Box>
+          <Box pt={10} pl={4}>
+            <Heading
+              style={{
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+              bgGradient="linear(135deg, pink.500, yellow.200, pink.400)"
+              textShadow={"1px 1px 1px rgba(130, 130, 130, 0.1)"}
+              fontFamily={"Outfit Variable"}
+              fontWeight={"bold"}
+              fontSize={"xxx-large"}
+            >
+              Daily Check-in Event
+            </Heading>
+            <Box mt={10}>
+              <Text fontSize={"x-large"} color={"gray.800"} mt={4}>
+                Receive 0.1 BSM for checking in each day.
+              </Text>
+              <Text mt={4}>
+                If you check in for{" "}
+                <span style={{ fontSize: 22 }}>7 consecutive days</span>, an
+                additional 0.3 BSM will be rewarded on the 7th day, for a total
+                of
+                <span style={{ fontSize: 22 }}>1 BSM</span> .
+              </Text>
+              <Text mt={4}>
+                {" "}
+                If you check in for{" "}
+                <span style={{ fontSize: 22 }}> 28 consecutive days</span>, an
+                additional 1 BSM will be rewarded on the 28th day, for a total
+                of
+                <span style={{ fontSize: 22 }}> 5 BSM</span>.
+              </Text>{" "}
+            </Box>
+            <Text color="gray.800" mt={4}>
+              <span style={{ color: "#ff2c2c" }}> *</span> A minimum of 1000 BSM
+              staking is required to participate in the check-in event.
+            </Text>
+          </Box>{" "}
+        </Flex>
+      </section>
+      <section>
+        <Flex
+          mb={"120px"}
+          py={10}
+          flexDir={"column"}
+          alignItems={"center"}
+          bgGradient={"linear(to-t, white, yellow.200, white)"}
+          justifyContent={"center"}
+        >
+          <Calendar
+            onChange={handleDateChange as (value: any) => void}
+            value={value}
+            tileClassName={tileClassName}
+            tileDisabled={tileDisabled}
+            tileContent={tileContent}
+            locale="en-US"
+            className={"custom-calendar"}
+          />
+          <Button
+            mt={6}
+            colorScheme="yellow.400"
+            onClick={handleAttendanceCheck}
+            disabled={loading || hasMarkedToday}
+          >
+            {loading
+              ? "Processing..."
+              : hasMarkedToday
+              ? "Already Checked"
+              : "Mark Attendance"}
+          </Button>
+          {message && <p>{message}</p>}
+        </Flex>
+      </section>
+    </Box>
   );
 };
 

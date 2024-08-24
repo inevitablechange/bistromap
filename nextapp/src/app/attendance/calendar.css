@@ -1,0 +1,32 @@
+.custom-calendar {
+  width: 800px;
+  border-radius: 4px;
+  font-family: "Outfit Variable", sans-serif;
+  font-size: 20px;
+  border-color: #dfdfd7;
+}
+
+.custom-calendar .react-calendar__tile {
+  width: 88px;
+  height: 88px;
+  background-color: #fcfae7;
+}
+
+.custom-calendar .react-calendar__month-view__weekdays {
+  font-size: 20px;
+}
+.custom-calendar .react-calendar__month-view__weekdays abbr {
+  text-decoration: none;
+  color: ##787878;
+}
+
+.custom-calendar .react-calendar__month-view__days {
+}
+
+.custom-calendar .react-calendar__tile:hover {
+  background: #abc73d59;
+}
+
+.custom-calendar .react-calendar__tile--active {
+  background: #404f0699;
+}
