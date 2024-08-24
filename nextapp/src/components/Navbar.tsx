@@ -6,7 +6,6 @@ import {
   Text,
   Button,
   Stack,
-  Collapse,
   Icon,
   Popover,
   PopoverTrigger,

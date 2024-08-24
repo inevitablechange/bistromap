@@ -178,11 +178,11 @@ const Swap: FC<SwapProps> = ({
       marginTop={8}
       marginBottom={100}
       p={4}
-      bgColor="yellow.100"
+      bgColor="yellow.50"
       rounded="lg"
       borderWidth={1}
     >
-      <Flex minW="full" flexDir="column">
+      <Flex width="800px" flexDir="column">
         <Flex marginBottom={4} alignItems="center">
           <Image src="/images/logo.png" boxSize="40px" alt="BSM icon" />
           <Text
@@ -206,6 +206,7 @@ const Swap: FC<SwapProps> = ({
             p={4}
             mr={4}
             flexDir="column"
+            bgColor="yellow.100"
           >
             <Text fontWeight="bold" fontSize="20px" mb={4}>
               Swap
@@ -254,6 +255,8 @@ const Swap: FC<SwapProps> = ({
                 bgColor="yellow.400"
                 isLoading={isLoading}
                 isDisabled={isLoading}
+                bg="yellow.300"
+                _hover={{ bg: "yellow.400" }}
               >
                 Swap
               </Button>
@@ -265,6 +268,7 @@ const Swap: FC<SwapProps> = ({
             borderRadius="md"
             p={4}
             flexDir="column"
+            bgColor="yellow.100"
           >
             <Text fontWeight="bold" fontSize="20px" mb={4}>
               Your Balance
