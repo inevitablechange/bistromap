@@ -7,7 +7,7 @@ import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
 import { rewardContractAddress } from "@/constants";
-import styles from "../ClandarComponent.module.css";
+import styles from "../../styles/CalendarComponent.module.css";
 
 interface AttendanceData {
   [key: string]: boolean;

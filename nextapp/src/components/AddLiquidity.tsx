@@ -343,10 +343,10 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
                     boxSize="20px"
                     alt="BSM icon"
                   />
-                  <Text paddingLeft={2}>stBSM</Text>
+                  <Text paddingLeft={2}>lpBSM</Text>
                   <Spacer />
                   <Text>
-                    {Number(ethers.formatUnits(lpBalance, 18)).toFixed(3)} stBSM
+                    {Number(ethers.formatUnits(lpBalance, 18)).toFixed(3)} lpBSM
                   </Text>
                 </Flex>
               </Box>
