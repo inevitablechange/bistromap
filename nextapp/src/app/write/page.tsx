@@ -88,7 +88,8 @@ const Edit: NextPage = () => {
   }
 
   useEffect(() => {
-    const handlePublishEvent = () => {
+    if (!contract) return;
+    const onPublished = () => {
       try {
         if (!contract) return;
         contract.on("Published", async (user_address, serial_number) => {
@@ -131,7 +132,12 @@ const Edit: NextPage = () => {
         setIsModalOpen(false);
       }
     };
-    handlePublishEvent();
+    contract.on("Published", onPublished);
+
+    // Clean up the event listener when the component unmounts or dependencies change
+    return () => {
+      contract.off("Published", onPublished);
+    };
   }, [contract, account]);
 
   return (

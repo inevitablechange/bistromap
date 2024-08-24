@@ -2,153 +2,74 @@
 
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
-import Web3 from "web3";
 import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
+import { useAccount } from "@/context/AccountContext";
 import { rewardContractAddress } from "@/constants";
 import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import "./calendar.css";
+import { ethers, Signer } from "ethers";
+import { FaCheck } from "react-icons/fa";
 interface AttendanceData {
-  [key: string]: boolean;
+  [key: string]: number;
 }
 
 const CalendarComponent: React.FC = () => {
-  const [value, setValue] = useState<Date>(new Date());
-  const [attendance, setAttendance] = useState<AttendanceData>({});
-  const [web3, setWeb3] = useState<Web3 | null>(null);
+  const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
+
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
 
+  const { account, signer }: { account: string | null; signer: Signer | null } =
+    useAccount();
+
   useEffect(() => {
-    const fetchAttendanceData = async () => {
+    if (!account) return;
+    const getAttendance = async () => {
       const { data, error } = await supabase
         .from("attendance")
-        .select("date, is_present");
-
+        .select("*")
+        .eq("id", account)
+        .maybeSingle();
+      if (data && data.attendance_dates) {
+        const ret = makeAttendanceData(data.attendance_dates);
+        setAttendanceData(ret);
+      }
       if (error) {
-        console.error("Error fetching attendance data:", error);
-      } else {
-        const attendanceMap: AttendanceData = {};
-        data.forEach((record) => {
-          attendanceMap[record.date] = record.is_present;
-        });
-        setAttendance(attendanceMap);
+        console.error(error);
       }
     };
+    getAttendance();
+  }, [account]);
 
-    fetchAttendanceData();
-  }, []);
-
-  useEffect(() => {
-    const initWeb3 = async () => {
-      if (
-        typeof window !== "undefined" &&
-        typeof window.ethereum !== "undefined"
-      ) {
-        try {
-          await window.ethereum.request({ method: "eth_requestAccounts" });
-          const web3Instance = new Web3(window.ethereum);
-          setWeb3(web3Instance);
-
-          const contract = new web3Instance.eth.Contract(
-            RewardABI,
-            rewardContractAddress
-          );
-          console.log("contract::", contract);
-          setRewardContract(contract);
-        } catch (error) {
-          console.error("Error initializing Web3:", error);
-        }
-      } else {
-        console.error("Web3 is not available in the current environment.");
-      }
-    };
-
-    initWeb3();
-  }, []);
-
-  useEffect(() => {
-    const checkTodayAttendance = async () => {
-      const today = new Date().toISOString().split("T")[0];
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("is_present")
-        .eq("date", today)
-        .single();
-
-      if (error) {
-        console.error("Error fetching attendance status from Supabase:", error);
-      } else {
-        setHasMarkedToday(data?.is_present ?? false);
-      }
-    };
-
-    checkTodayAttendance();
-  }, []);
-
-  const handleDateChange = async (value: Date | Date[] | null) => {
-    if (Array.isArray(value) || value === null) return;
-
-    const selectedDate = value as Date;
-    const today = new Date();
-    const formattedSelectedDate = selectedDate.toISOString().split("T")[0];
-    const formattedToday = today.toISOString().split("T")[0];
-
-    if (formattedSelectedDate !== formattedToday) {
-      return; // Do not allow attendance marking for dates other than today
-    }
-
-    setValue(selectedDate);
-    const isPresent = !attendance[formattedToday];
-
-    setAttendance((prev) => ({
-      ...prev,
-      [formattedToday]: isPresent,
-    }));
-
-    if (rewardContract && web3) {
-      setLoading(true);
-      setMessage(null);
-      try {
-        const accounts = await web3.eth.getAccounts();
-        await rewardContract.methods
-          .markAttendance()
-          .send({ from: accounts[0] });
-
-        const { error } = await supabase
-          .from("attendance")
-          .upsert([{ date: formattedToday, is_present: isPresent }]);
-
-        if (error) {
-          console.error("Error updating attendance in Supabase:", error);
-          setMessage("Error updating attendance in Supabase.");
-        } else {
-          setMessage("Attendance updated successfully in Supabase!");
-          setHasMarkedToday(true); // Mark today's attendance as completed
-        }
-      } catch (error) {
-        console.error("Error marking attendance:", error);
-        setMessage("Error marking attendance.");
-      } finally {
-        setLoading(false);
-      }
-    }
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0"); // getMonth()는 0부터 시작하므로 +1 필요
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
-
-  const tileClassName = ({ date }: { date: Date }) => {
-    const formattedDate = date.toISOString().split("T")[0];
-    return "";
+  const makeAttendanceData = (attendanceDates: string[]) => {
+    const obj: AttendanceData = {};
+    for (let date of attendanceDates) {
+      const key: string = formatDate(new Date(date));
+      obj[key] = 1;
+    }
+    return obj;
   };
-
   const tileContent = ({ date }: { date: Date }) => {
-    const formattedDate = date.toISOString().split("T")[0];
-    const today = new Date().toISOString().split("T")[0];
-    return attendance[formattedDate] ? (
-      <div>{formattedDate === today ? "Complete" : "✓"}</div>
-    ) : null;
+    if (attendanceData[formatDate(date)]) {
+      console.log({ thiisDate: date });
+      if (formatDate(new Date()) === formatDate(date)) {
+        setHasMarkedToday(true);
+      }
+      return <FaCheck color="green" fontSize={24} />;
+    } else {
+      return null;
+    }
   };
 
   const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
@@ -157,36 +78,88 @@ const CalendarComponent: React.FC = () => {
   };
 
   const handleAttendanceCheck = async () => {
-    if (rewardContract && web3 && !hasMarkedToday) {
+    console.log("handleAttendanceCheck");
+    if (account) {
       setLoading(true);
       setMessage(null);
       try {
-        const accounts = await web3.eth.getAccounts();
-        await rewardContract.methods
-          .markAttendance()
-          .send({ from: accounts[0] });
-
-        const { error } = await supabase
-          .from("attendance")
-          .upsert([
-            { date: new Date().toISOString().split("T")[0], is_present: true },
-          ]);
-
-        if (error) {
-          console.error("Error updating attendance in Supabase:", error);
-          setMessage("Error updating attendance in Supabase.");
-        } else {
-          setMessage("Attendance updated successfully in Supabase!");
-          setHasMarkedToday(true);
-        }
+        const contract = new ethers.Contract(
+          rewardContractAddress,
+          RewardABI,
+          signer
+        );
+        setRewardContract(contract);
+        contract.markAttendance();
       } catch (error) {
-        console.error("Error marking attendance:", error);
-        setMessage("Error marking attendance.");
       } finally {
         setLoading(false);
       }
     }
   };
+  const sendSupabase = async () => {
+    const { data, error } = await supabase.from("attendance").insert([
+      {
+        id: account,
+        attendance_dates: [new Date().toISOString()], // Initialize the array with today's timestamp
+      },
+    ]);
+
+    if (error) {
+      throw error;
+    }
+    console.log("New attendance record created:", data);
+  };
+  useEffect(() => {
+    if (!rewardContract || !account) return;
+    const onAttendanceMarked = async () => {
+      try {
+        setLoading(true);
+        if (
+          Array.isArray(attendanceData.attendance_dates) &&
+          attendanceData.attendance_dates.length == 0
+        ) {
+          const { data, error } = await supabase.from("attendance").insert([
+            {
+              id: account,
+              attendance_dates: [new Date()],
+            },
+          ]);
+
+          if (error) {
+            throw error;
+          }
+          console.log("New attendance record created:", data);
+        } else if (
+          Array.isArray(attendanceData.attendance_dates) &&
+          attendanceData.attendance_dates.length > 0
+        ) {
+          const updatedAttendanceDates = [
+            ...attendanceData.attendance_dates,
+            new Date(),
+          ];
+          const { data, error } = await supabase
+            .from("attendance")
+            .update({ attendance_dates: updatedAttendanceDates })
+            .eq("id", account);
+
+          if (error) {
+            throw error;
+          }
+          console.log("Attendance record updated:", data);
+        }
+      } catch (e) {
+        console.error("Error checking attendance:", e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    rewardContract.on("AttendanceMarked", onAttendanceMarked);
+
+    // Clean up the event listener when the component unmounts or dependencies change
+    return () => {
+      rewardContract.off("AttendanceMarked", onAttendanceMarked);
+    };
+  }, [rewardContract]);
 
   return (
     <Box w="full">
@@ -246,14 +219,11 @@ const CalendarComponent: React.FC = () => {
           py={10}
           flexDir={"column"}
           alignItems={"center"}
-          bgGradient={"linear(to-t, white, yellow.200, white)"}
+          bgGradient={"linear(to-t, white, mint, white)"}
           justifyContent={"center"}
         >
           <Calendar
-            onChange={handleDateChange as (value: any) => void}
-            value={value}
-            tileClassName={tileClassName}
-            tileDisabled={tileDisabled}
+            tileDisabled={() => true}
             tileContent={tileContent}
             locale="en-US"
             className={"custom-calendar"}
@@ -263,11 +233,12 @@ const CalendarComponent: React.FC = () => {
             colorScheme="yellow.400"
             onClick={handleAttendanceCheck}
             disabled={loading || hasMarkedToday}
+            cursor={hasMarkedToday ? "not-allowed" : "pointer"}
           >
             {loading
               ? "Processing..."
               : hasMarkedToday
-              ? "Already Checked"
+              ? "Checked-in for Today!"
               : "Mark Attendance"}
           </Button>
           {message && <p>{message}</p>}

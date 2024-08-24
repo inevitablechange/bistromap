@@ -7,9 +7,11 @@
 }
 
 .custom-calendar .react-calendar__tile {
+  position: relative;
   width: 88px;
   height: 88px;
   background-color: #fcfae7;
+  border: 1px solid #ababab30;
 }
 
 .custom-calendar .react-calendar__month-view__weekdays {
@@ -20,13 +22,25 @@
   color: ##787878;
 }
 
-.custom-calendar .react-calendar__month-view__days {
-}
-
 .custom-calendar .react-calendar__tile:hover {
-  background: #abc73d59;
+  color: inherit;
+  cursor: auto;
+}
+.custom-calendar .react-calendar__tile.present,
+.custom-calendar .react-calendar__tile.present.react-calendar__tile:hover {
+  background-image: url("/assets/check.svg");
+  background-repeat: no-repeat;
+  background-position: 14px 7px;
 }
 
+.react-calendar__tile--active,
 .custom-calendar .react-calendar__tile--active {
-  background: #404f0699;
+  background: #fff69d;
+}
+
+.custom-calendar .react-calendar__tile svg {
+  position: absolute;
+  left: 16px;
+  color: green;
+  top: 10px;
 }

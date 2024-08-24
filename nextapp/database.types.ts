@@ -9,6 +9,32 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          attendance_dates: string[] | null
+          consecutiveDays: number[]
+          id: string
+        }
+        Insert: {
+          attendance_dates?: string[] | null
+          consecutiveDays: number[]
+          id: string
+        }
+        Update: {
+          attendance_dates?: string[] | null
+          consecutiveDays?: number[]
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["address"]
+          },
+        ]
+      }
       publications: {
         Row: {
           content: string | null
