@@ -185,7 +185,8 @@ contract Reward {
         // 스테이킹 여부 확인
         require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
 
-        userAttendance[msg.sender].dates.push(block.timestamp);
+        calendar.push(block.timestamp);
+        
         if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) {
             userAttendance[msg.sender].consecutive += 1;
         } else {

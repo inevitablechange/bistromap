@@ -15,6 +15,7 @@
     "@chakra-ui/theme": "^3.3.1",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
+    "@fontsource-variable/outfit": "^5.0.14",
     "@fontsource/plus-jakarta-sans": "^5.0.20",
     "@googlemaps/js-api-loader": "^1.16.8",
     "@pinata/sdk": "^2.1.0",

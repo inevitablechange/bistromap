@@ -1,0 +1,46 @@
+.custom-calendar {
+  width: 800px;
+  border-radius: 4px;
+  font-family: "Outfit Variable", sans-serif;
+  font-size: 20px;
+  border-color: #dfdfd7;
+}
+
+.custom-calendar .react-calendar__tile {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  background-color: #fcfae7;
+  border: 1px solid #ababab30;
+}
+
+.custom-calendar .react-calendar__month-view__weekdays {
+  font-size: 20px;
+}
+.custom-calendar .react-calendar__month-view__weekdays abbr {
+  text-decoration: none;
+  color: ##787878;
+}
+
+.custom-calendar .react-calendar__tile:hover {
+  color: inherit;
+  cursor: auto;
+}
+.custom-calendar .react-calendar__tile.present,
+.custom-calendar .react-calendar__tile.present.react-calendar__tile:hover {
+  background-image: url("/assets/check.svg");
+  background-repeat: no-repeat;
+  background-position: 14px 7px;
+}
+
+.react-calendar__tile--active,
+.custom-calendar .react-calendar__tile--active {
+  background: #fff69d;
+}
+
+.custom-calendar .react-calendar__tile svg {
+  position: absolute;
+  left: 16px;
+  color: green;
+  top: 10px;
+}

@@ -195,3 +195,9 @@ input[type="text"] {
   background-color: #fff;
   font-size: 20px;
 }
+
+button.react-calendar__tile {
+  width: 88px;
+  height: 88px;
+  background: red;
+}
