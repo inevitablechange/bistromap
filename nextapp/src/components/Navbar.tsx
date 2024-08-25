@@ -229,6 +229,10 @@ const NAV_ITEMS: Array<NavItem> = [
     label: "Selections",
     href: "/selections",
   },
+  {
+    label: "My Page",
+    href: "/mypage",
+  },
 ];
 
 export default NavBar;
