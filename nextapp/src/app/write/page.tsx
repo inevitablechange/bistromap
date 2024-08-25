@@ -13,17 +13,15 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react";
-import { NextPage } from "next";
 import { useForm, FormProvider } from "react-hook-form";
-import { useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import "react-quill/dist/quill.snow.css";
 import { rewardContractAddress } from "@/constants";
 import GoogleMaps from "@/components/GoogleMaps";
 import QuillEditor from "@/components/QuillEditor";
 import { useAccount } from "@/context/AccountContext";
-import rewardABI from "@/abi/Reward.json";
-import { ethers } from "ethers";
-import { Contract } from "ethers";
+import RewardABI from "@/abi/Reward.json";
+import { BrowserProvider, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 
 interface ReviewData {
@@ -38,13 +36,13 @@ interface ReviewData {
   published_at: string; // 발행 시간 (ISO 포맷)
 }
 
-const Edit: NextPage = () => {
-  const [contract, setContract] = useState<Contract | null>(null);
+const Edit: FC = () => {
+  const [contract, setContract] = useState<any>(null);
   const [content, setContent] = useState<string>("");
   const [length, setLength] = useState<number>(0);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [account, setAccount] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const toast = useToast();
   const methods = useForm();
@@ -53,99 +51,137 @@ const Edit: NextPage = () => {
     register,
     formState: { errors, isSubmitting },
   } = methods;
-  const { account, signer } = useAccount();
+  const {
+    provider,
+  }: { provider: BrowserProvider | null; signer: Signer | null } = useAccount();
 
+  useEffect(() => {
+    const accountGetter = async () => {
+      if (!provider) return;
+      const signer = await provider.getSigner();
+      const acc = await signer.getAddress();
+      setAccount(acc);
+      const rewardContract = new ethers.Contract(
+        rewardContractAddress,
+        RewardABI,
+        signer
+      );
+
+      setContract(rewardContract);
+    };
+    accountGetter();
+  }, [provider]);
   const handleLocationSelect = (location: string) => {
     setSelectedLocation(location);
     setIsMapOpen(false); // 선택 후 구글 맵 닫기
   };
-  console.log({ account });
+  const upload = async () => {
+    if (!contract) return;
+    const review = await contract.getReview(1);
+    const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
+
+    // Save to Supabase
+    const { error } = await supabase.from("publications").insert([
+      {
+        user_address: review.writer,
+        serial_number: 1,
+        title: review.title,
+        content: decodedContent,
+        published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
+        restaurant: review.restaurant,
+        longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
+        latitude: parseInt(review.latitude) / Math.pow(10, 6),
+        votes: 0,
+      },
+    ]);
+    if (error) {
+      toast({
+        title: "Oops! There was an error",
+        description: error.message,
+        status: "error",
+        duration: 7000,
+        isClosable: true,
+      });
+      console.log(error);
+    }
+  };
   async function onSubmit(values: any) {
     try {
-      setIsLoading(true);
+      if (!contract) {
+        throw Error("No contract");
+      }
+      setIsModalOpen(true);
       console.log("values::", values);
       values.content = content;
-      const rewardContract = new ethers.Contract(
-        rewardContractAddress,
-        rewardABI,
-        signer
-      );
+
       storeEthereumAddress(account!);
 
-      setContract(rewardContract);
       const lng = Math.floor(values.location.lng * Math.pow(10, 6));
       const lat = Math.floor(values.location.lat * Math.pow(10, 6));
       const base64Html = Buffer.from(values.content).toString("base64");
       // ethereum network에 publish.
-      rewardContract.publish(values.title, values.place, base64Html, lng, lat);
-      console.log("publish ok");
+      await contract.publish(values.title, values.place, base64Html, lng, lat);
     } catch (e) {
       console.error(e);
     } finally {
-      setIsModalOpen(true);
-      setIsLoading(false);
+      setIsModalOpen(false);
     }
   }
 
   useEffect(() => {
-    const handlePublishEvent = () => {
+    if (!contract) return;
+    console.log("below onpublish");
+    const onPublished = async (user_address: string, serial_number: string) => {
       try {
-        if (!contract) return;
-        contract.on("Published", async (user_address, serial_number) => {
-          console.log("Published event detected:");
-          // Fetch review details from contract
-          const review = await contract.getReview(serial_number);
-          const decodedContent = Buffer.from(
-            review.content,
-            "base64"
-          ).toString(); // Decode base64 to HTML content
+        console.log("Published event detected:");
+        setIsModalOpen(true);
+        // Fetch review details from contract
+        const review = await contract.getReview(serial_number);
+        const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
 
-          // Save to Supabase
-          const { error } = await supabase.from("publications").insert([
-            {
-              user_address: review.writer,
-              serial_number: parseInt(serial_number),
-              title: review.title,
-              content: decodedContent,
-              published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
-              restaurant: review.restaurant,
-              longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
-              latitude: parseInt(review.latitude) / Math.pow(10, 6),
-              votes: 0,
-            },
-          ]);
-          if (error) {
-            toast({
-              title: "Oops! There was an error",
-              description: error.message,
-              status: "error",
-              duration: 7000,
-              isClosable: true,
-            });
-            console.log(error);
-          }
-        });
+        // Save to Supabase
+        const { error } = await supabase.from("publications").insert([
+          {
+            user_address: review.writer,
+            serial_number: parseInt(serial_number),
+            title: review.title,
+            content: decodedContent,
+            published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
+            restaurant: review.restaurant,
+            longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
+            latitude: parseInt(review.latitude) / Math.pow(10, 6),
+            votes: 0,
+          },
+        ]);
+        if (error) {
+          toast({
+            title: "Oops! There was an error",
+            description: error.message,
+            status: "error",
+            duration: 7000,
+            isClosable: true,
+          });
+          console.log(error);
+        }
       } catch (e) {
         console.log(e);
       } finally {
         setIsModalOpen(false);
       }
     };
-    handlePublishEvent();
-  }, [contract, account]);
+    console.log({ contract });
+    contract.on("Published", onPublished);
+
+    // Clean up the event listener when the component unmounts or dependencies change
+    return () => {
+      contract.off("Published", onPublished);
+    };
+  }, [contract]);
 
   return (
-    <Box w={"100%"} bgColor="yellow.100" height="fit-content">
+    <Box w={"100%"} min-height="calc(100vh - 60px)">
       <Box width={"1024px"} marginX="auto">
-        <Flex
-          justifyContent={"center"}
-          marginTop={12}
-          fontSize={"42px"}
-          fontWeight={"700"}
-        >
-          Where Did You Go?
-        </Flex>
-
+        <Button onClick={upload}>Trigger Event</Button>
         <FormProvider {...methods}>
           <Flex width={"full"}>
             <form
@@ -154,30 +190,25 @@ const Edit: NextPage = () => {
               style={{ width: "100%" }}
             >
               <FormControl>
-                <Flex
-                  width={"full"}
-                  justify={"space-between"}
-                  marginTop={10}
-                  marginBottom={14}
-                >
-                  <Button style={{ borderRadius: 50 }} colorScheme="yellow.400">
+                <Flex width={"full"} justify={"space-between"} marginY={4}>
+                  <Button
+                    border="solid"
+                    borderColor={"gray.300"}
+                    style={{ borderRadius: 50 }}
+                    bgColor="lightGreen"
+                  >
                     {`${account?.slice(0, 4)}...${account?.slice(
                       account.length - 4
                     )}`}
                   </Button>
-                  <Button
-                    style={{ borderRadius: 50 }}
-                    colorScheme="chocolate.light"
-                    type="submit"
-                  >
+                  <Button rounded="full" bgColor="yellow.400" type="submit">
                     Publish
                   </Button>
                 </Flex>
               </FormControl>
-              <Box bgColor={"white"} py={6} px={3} rounded="lg">
-                <FormControl mb={3}>
+              <Box rounded="lg" height="calc(100vh - 132px)">
+                <FormControl mb={2}>
                   <Input
-                    my={2}
                     type="text"
                     placeholder="Your Title Here"
                     width="full"
@@ -206,7 +237,7 @@ const Edit: NextPage = () => {
                     placeholder="What was the name of the place you visited?"
                   />
                 </FormControl>
-                <Flex justify="space-between" mt={8} mb={6}>
+                <Flex justify="space-between" my={2}>
                   <Button
                     paddingLeft={"14px"}
                     onClick={() => {
