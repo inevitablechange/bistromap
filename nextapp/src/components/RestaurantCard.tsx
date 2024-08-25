@@ -2,21 +2,7 @@ import { Badge, Box, Flex, Heading, Image, Text } from "@chakra-ui/react";
 import { IoRestaurantOutline } from "react-icons/io5";
 import { useRouter } from "next/navigation";
 
-// RestaurantCard 컴포넌트의 Props 타입 정의
-interface RestaurantCardProps {
-  card: {
-    serial_number: string;
-    title: string;
-    restaurant: string;
-    content: string;
-    image?: string;
-    votes: number;
-    published_at: string;
-  };
-  onClick?: () => void; // 선택적 onClick 핸들러 추가
-}
-
-const RestaurantCard = ({ card, onClick }: RestaurantCardProps) => {
+const RestaurantCard = ({ card }: Publication) => {
   const router = useRouter();
 
   // HTML 콘텐츠에서 첫 번째 이미지를 제거
@@ -41,11 +27,7 @@ const RestaurantCard = ({ card, onClick }: RestaurantCardProps) => {
       h={"500px"}
       cursor="pointer"
       onClick={() => {
-        if (onClick) {
-          onClick(); // 외부에서 전달된 onClick 핸들러가 있으면 호출
-        } else {
-          router.push(`/posts/${card.serial_number}`); // 기본 페이지 이동
-        }
+        router.push(`/posts/${card.serial_number}`); // 기본 페이지 이동
       }}
     >
       <Box>

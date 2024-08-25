@@ -1,4 +1,4 @@
-import { Flex, Grid } from "@chakra-ui/react";
+import { Grid } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import supabase from "@/lib/supabaseClient";
 import RestaurantCard from "./RestaurantCard";
@@ -14,6 +14,7 @@ const RestaurantCardList = () => {
         return [];
       }
       setCards(reviews);
+      console.log({ reviews });
     };
     getReviews();
   }, []);
