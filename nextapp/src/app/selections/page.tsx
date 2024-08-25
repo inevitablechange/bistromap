@@ -44,7 +44,7 @@ const dummyData: CardData[] = [
   {
     id: 3,
     serial_number: "dummy3",
-    title: "Slolw London",
+    title: "Slow London",
     restaurant: "Chino Latino",
     content:
       "For me, London tends to be a swift one-day affair for a day on set, back-to-back meetings or events across the city. However, last week my visit was a little different, I was to stay at The Gantry, a Stratford hotel, with dinner at Chino Latino, just south of the river. ",
