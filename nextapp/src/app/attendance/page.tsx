@@ -9,7 +9,7 @@ import { useAccount } from "@/context/AccountContext";
 import { rewardContractAddress } from "@/constants";
 import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import "./calendar.css";
-import { BrowserProvider, ethers, Provider, Signer } from "ethers";
+import { ethers, Signer } from "ethers";
 import { FaCheck } from "react-icons/fa";
 interface AttendanceData {
   [key: string]: number;
@@ -17,19 +17,14 @@ interface AttendanceData {
 
 const CalendarComponent: React.FC = () => {
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
-  const [account, setAccount] = useState<string>("");
+
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
 
-  const {
-    provider,
-  }: {
-    account: string | null;
-    signer: Signer | null;
-    provider: BrowserProvider | null;
-  } = useAccount();
+  const { account, signer }: { account: string | null; signer: Signer | null } =
+    useAccount();
 
   useEffect(() => {
     if (!account) return;
@@ -39,7 +34,6 @@ const CalendarComponent: React.FC = () => {
         .select("*")
         .eq("id", account)
         .maybeSingle();
-      console.log({ data });
       if (data && data.attendance_dates) {
         const ret = makeAttendanceData(data.attendance_dates);
         setAttendanceData(ret);
@@ -67,74 +61,52 @@ const CalendarComponent: React.FC = () => {
     return obj;
   };
   const tileContent = ({ date }: { date: Date }) => {
-    if (attendanceData[formatDate(date)]) {
-      console.log({ thiisDate: date });
-      if (formatDate(new Date()) === formatDate(date)) {
-        setHasMarkedToday(true);
+    setTimeout(() => {
+      if (attendanceData[formatDate(date)]) {
+        if (formatDate(new Date()) === formatDate(date)) {
+          setHasMarkedToday(true);
+        }
+        return <FaCheck color="green" fontSize={24} />;
+      } else {
+        return null;
       }
-      return <FaCheck color="green" fontSize={24} />;
-    } else {
-      return null;
-    }
+    }, 0);
   };
-
-  // const checkAttendance = async () => { // upload 실패시 수동으로 사용
-  //   if (!rewardContract) {
-  //     console.log("no reward c");
-  //     return;
-  //   }
-  //   const { dates, consecutive } = await rewardContract.getUserAttendance();
-  //   console.log("data from::", dates, consecutive);
-  //   Array.isArray(attendanceData.attendance_dates) &&
-  //     attendanceData.attendance_dates.length == 0;
-  //   const timestamp = dates[0];
-  //   console.log({ timestamp });
-  //   const { data, error } = await supabase.from("attendance").insert([
-  //     {
-  //       id: account,
-  //       attendance_dates: [new Date(parseInt(timestamp.toString()) * 1000)],
-  //     },
-  //   ]);
-
-  //   if (error) {
-  //     throw error;
-  //   }
-  //   console.log("New attendance record created:", data);
-  // };
-
   const handleAttendanceCheck = async () => {
     console.log("handleAttendanceCheck");
     if (account) {
       setLoading(true);
       setMessage(null);
       try {
-        rewardContract.markAttendance();
+        const contract = new ethers.Contract(
+          rewardContractAddress,
+          RewardABI,
+          signer
+        );
+        setRewardContract(contract);
+        contract.markAttendance();
       } catch (error) {
       } finally {
         setLoading(false);
       }
     }
   };
+  const sendSupabase = async () => {
+    const { data, error } = await supabase.from("attendance").insert([
+      {
+        id: account,
+        attendance_dates: [new Date().toISOString()], // Initialize the array with today's timestamp
+      },
+    ]);
 
-  useEffect(() => {
-    const accountGetter = async () => {
-      if (!provider) return;
-      const signer = await provider.getSigner();
-      const acc = await signer.getAddress();
-      setAccount(acc);
-      const rewardContract = new ethers.Contract(
-        rewardContractAddress,
-        RewardABI,
-        signer
-      );
-
-      setRewardContract(rewardContract);
-    };
-    accountGetter();
-  }, [provider]);
+    if (error) {
+      throw error;
+    }
+    console.log("New attendance record created:", data);
+  };
   useEffect(() => {
     if (!rewardContract || !account) return;
-    const onAttendanceMarked = async (_: string, timestamp: BigInt) => {
+    const onAttendanceMarked = async () => {
       try {
         setLoading(true);
         if (
@@ -144,9 +116,7 @@ const CalendarComponent: React.FC = () => {
           const { data, error } = await supabase.from("attendance").insert([
             {
               id: account,
-              attendance_dates: [
-                new Date(parseInt(timestamp.toString()) * 1000),
-              ],
+              attendance_dates: [new Date()],
             },
           ]);
 
@@ -160,7 +130,7 @@ const CalendarComponent: React.FC = () => {
         ) {
           const updatedAttendanceDates = [
             ...attendanceData.attendance_dates,
-            new Date(parseInt(timestamp.toString()) * 1000),
+            new Date(),
           ];
           const { data, error } = await supabase
             .from("attendance")
@@ -189,7 +159,6 @@ const CalendarComponent: React.FC = () => {
   return (
     <Box w="full">
       <section>
-        <Button onClick={checkAttendance}>CheckAttendance</Button>
         <Flex bgColor={"cream"}>
           <Box
             backgroundImage="url('/assets/peaches.jpg')"
@@ -248,12 +217,14 @@ const CalendarComponent: React.FC = () => {
           bgGradient={"linear(to-t, white, mint, white)"}
           justifyContent={"center"}
         >
-          <Calendar
-            tileDisabled={() => true}
-            tileContent={tileContent}
-            locale="en-US"
-            className={"custom-calendar"}
-          />
+          {
+            <Calendar
+              tileDisabled={() => true}
+              tileContent={tileContent}
+              locale="en-US"
+              className={"custom-calendar"}
+            />
+          }
           <Button
             mt={6}
             colorScheme="yellow.400"

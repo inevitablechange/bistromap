@@ -36,6 +36,7 @@ contract Reward {
         int32 longitude; // 경도
         int32 latitude; // 위도
         bool expired; // 집계가 끝났는지 여부
+        bool elected; // top review로 선정되었는지 여부 
     }
 
    mapping(uint => Review) public reviews;
@@ -51,7 +52,7 @@ contract Reward {
     uint public lastRewardAt;
 
     event Published(address indexed user, uint256 reviewNumber);
-    event Voted(address indexed user, uint256 reviewNumber);
+    event Voted(address indexed user, uint256 reviewNumber, uint votes);
     event AttendanceMarked(address indexed user, uint256 timestamp);
 
     constructor(address _bistroTokenAddress, address _stakingContractAddress, address _dateCheckerContractAddress) {
@@ -77,7 +78,7 @@ contract Reward {
                     }
                 }
             }
-            // find index;]
+            // find index;
             uint leng;
             for (uint i = 0; i < arr.length; i++) {
                 if (arr[i].votes >= minimumVotes) {
@@ -89,13 +90,37 @@ contract Reward {
             Review[] memory topReviews = new Review[](leng);
             for (uint i = 0; i < leng; i++) {
                 topReviews[i] = arr[i];
+                topReviews[i].elected = true;
             }
         return topReviews;
         }
     }
 
+    function claimVoterReward(uint serialNumber) public {
+        Review storage review = reviews[serialNumber];
+        require(review.expired, "Review rewards not yet calculated");
+
+        // Check if the sender voted for the review
+        bool votedFor = false;
+        for (uint i = 0; i < review.votedBy.length; i++) {
+            if (review.votedBy[i] == msg.sender) {
+                votedFor = true;
+                break;
+            }
+        }
+        require(votedFor, "Only voters of the selected review can claim reward");
+
+        uint votersToReward = review.votedBy.length;
+        require(votersToReward > 0, "No voters to reward");
+
+        uint rewardPerVoter = address(this).balance / votersToReward; // Total rewards divided by number of voters
+
+        // Transfer the reward to the voter
+        payable(msg.sender).transfer(rewardPerVoter);
+    }
+
     function reward() public {
-        require(block.timestamp >= lastRewardAt + 4 weeks); // 마지막 집계 이후 4주가 지나야함
+        require(block.timestamp >= lastRewardAt + 4 weeks, "can be done in 4 weeks fron last reward"); // 마지막 집계 이후 4주가 지나야함
         uint newReviewCount = reviewNumbers - lastReviewNumbers;
         Review[] memory collectedReviews = new Review[](newReviewCount);
         for (uint i = 0; i < newReviewCount; i++) {
@@ -105,20 +130,28 @@ contract Reward {
         Review[] memory topReviews = sort(collectedReviews);
         require(topReviews.length > 0, "No reviews");
 
-        uint votersToReward; // 보상을 받을 투표자의 수
-        
-        for (uint i = 0; i < topReviews.length; i++) {
-            // bistroToken.mint(topReviews[i].writer, BSM_DECIMALS * 6000);
+        uint votersToReward = 0;
+    
+        // Iterate through the top reviews and mark them as expired
+        for (uint i = 0; i < topReviews.length && i < REWARDS_FOR; i++) {
+            topReviews[i].expired = true; // Mark review as expired (processed)
+            
             votersToReward += topReviews[i].votedBy.length;
+            
+            // Do not mint tokens now, wait for writer to claim using `claimReward()`
         }
-        uint rewardPerVoter = address(this).balance / votersToReward; // total / votersToReward 
-        
-        for (uint i = 0; i < topReviews.length; i++) { 
+        // Split the rewards among voters of all selected reviews
+        uint rewardPerVoter = address(this).balance / votersToReward;
+
+        // Transfer rewards to each voter
+        for (uint i = 0; i < topReviews.length && i < REWARDS_FOR; i++) {
             for (uint j = 0; j < topReviews[i].votedBy.length; j++) {
-                payable(topReviews[i].votedBy[j]).transfer(rewardPerVoter);
+                address voter = topReviews[i].votedBy[j];
+                payable(voter).transfer(rewardPerVoter); // Send the calculated reward to each voter
             }
         }
 
+        // Update the last reward date
         lastRewardAt = block.timestamp;
         lastReviewNumbers = reviewNumbers;
     }
@@ -217,12 +250,12 @@ contract Reward {
 
         // 스테이킹 여부 확인
         require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
-
+        bistroToken.approve(address(this), VOTE_COST); // 이거 한거 아닌가 ? 
         require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
         rv.votes = rv.votes + 1;
         reviews[serialNumber].votedBy.push(msg.sender);
 
-        emit Voted(msg.sender, serialNumber);
+        emit Voted(rv.writer, serialNumber, rv.votes);
         userVotedFor[msg.sender].push(serialNumber);
     }
 }

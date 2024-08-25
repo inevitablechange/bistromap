@@ -23,6 +23,7 @@ import { useAccount } from "@/context/AccountContext";
 import RewardABI from "@/abi/Reward.json";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
+import { useRouter } from "next/navigation";
 
 interface ReviewData {
   user_address: string; // 이더리움 주소, 42자짜리 문자열
@@ -46,6 +47,7 @@ const Edit: FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const toast = useToast();
   const methods = useForm();
+  const router = useRouter();
   const {
     handleSubmit,
     register,
@@ -103,6 +105,14 @@ const Edit: FC = () => {
         isClosable: true,
       });
       console.log(error);
+    } else {
+      toast({
+        title: "success!",
+        status: "success",
+        duration: 4000,
+        isClosable: true,
+      });
+      router.push("/");
     }
   };
   async function onSubmit(values: any) {
