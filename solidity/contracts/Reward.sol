@@ -174,8 +174,14 @@ contract Reward {
         );
     }
 
+    function getUserAttendance() public view returns(Attendance memory) {
+        return userAttendance[msg.sender];
+    }
+
       function markAttendance() public {
-        uint[] storage calendar = userAttendance[msg.sender].dates;
+        Attendance storage attendance = userAttendance[msg.sender];
+        uint[] storage calendar = attendance.dates;
+
         
         if (calendar.length >= 1 ) {
             require(dateChecker.isToday(calendar[calendar.length - 1]) == false, "Today's attendance checked");
@@ -187,7 +193,7 @@ contract Reward {
 
         calendar.push(block.timestamp);
         
-        if (dateChecker.isYesterday(calendar[calendar.length - 1]) == true) {
+        if (dateChecker.isYesterday(userAttendance[msg.sender].dates[userAttendance[msg.sender].dates.length - 1]) == true) {
             userAttendance[msg.sender].consecutive += 1;
         } else {
             userAttendance[msg.sender].consecutive = 1;

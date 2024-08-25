@@ -320,6 +320,31 @@
   },
   {
     "inputs": [],
+    "name": "getUserAttendance",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256[]",
+            "name": "dates",
+            "type": "uint256[]"
+          },
+          {
+            "internalType": "uint8",
+            "name": "consecutive",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct Reward.Attendance",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "lastReviewNumbers",
     "outputs": [
       {

@@ -9,7 +9,7 @@ import { useAccount } from "@/context/AccountContext";
 import { rewardContractAddress } from "@/constants";
 import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import "./calendar.css";
-import { ethers, Signer } from "ethers";
+import { BrowserProvider, ethers, Provider, Signer } from "ethers";
 import { FaCheck } from "react-icons/fa";
 interface AttendanceData {
   [key: string]: number;
@@ -17,14 +17,19 @@ interface AttendanceData {
 
 const CalendarComponent: React.FC = () => {
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
-
+  const [account, setAccount] = useState<string>("");
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
 
-  const { account, signer }: { account: string | null; signer: Signer | null } =
-    useAccount();
+  const {
+    provider,
+  }: {
+    account: string | null;
+    signer: Signer | null;
+    provider: BrowserProvider | null;
+  } = useAccount();
 
   useEffect(() => {
     if (!account) return;
@@ -34,6 +39,7 @@ const CalendarComponent: React.FC = () => {
         .select("*")
         .eq("id", account)
         .maybeSingle();
+      console.log({ data });
       if (data && data.attendance_dates) {
         const ret = makeAttendanceData(data.attendance_dates);
         setAttendanceData(ret);
@@ -72,10 +78,29 @@ const CalendarComponent: React.FC = () => {
     }
   };
 
-  const tileDisabled = ({ date, view }: { date: Date; view: string }) => {
-    const today = new Date();
-    return view === "month" && date.toDateString() !== today.toDateString();
-  };
+  // const checkAttendance = async () => { // upload 실패시 수동으로 사용
+  //   if (!rewardContract) {
+  //     console.log("no reward c");
+  //     return;
+  //   }
+  //   const { dates, consecutive } = await rewardContract.getUserAttendance();
+  //   console.log("data from::", dates, consecutive);
+  //   Array.isArray(attendanceData.attendance_dates) &&
+  //     attendanceData.attendance_dates.length == 0;
+  //   const timestamp = dates[0];
+  //   console.log({ timestamp });
+  //   const { data, error } = await supabase.from("attendance").insert([
+  //     {
+  //       id: account,
+  //       attendance_dates: [new Date(parseInt(timestamp.toString()) * 1000)],
+  //     },
+  //   ]);
+
+  //   if (error) {
+  //     throw error;
+  //   }
+  //   console.log("New attendance record created:", data);
+  // };
 
   const handleAttendanceCheck = async () => {
     console.log("handleAttendanceCheck");
@@ -83,35 +108,33 @@ const CalendarComponent: React.FC = () => {
       setLoading(true);
       setMessage(null);
       try {
-        const contract = new ethers.Contract(
-          rewardContractAddress,
-          RewardABI,
-          signer
-        );
-        setRewardContract(contract);
-        contract.markAttendance();
+        rewardContract.markAttendance();
       } catch (error) {
       } finally {
         setLoading(false);
       }
     }
   };
-  const sendSupabase = async () => {
-    const { data, error } = await supabase.from("attendance").insert([
-      {
-        id: account,
-        attendance_dates: [new Date().toISOString()], // Initialize the array with today's timestamp
-      },
-    ]);
 
-    if (error) {
-      throw error;
-    }
-    console.log("New attendance record created:", data);
-  };
+  useEffect(() => {
+    const accountGetter = async () => {
+      if (!provider) return;
+      const signer = await provider.getSigner();
+      const acc = await signer.getAddress();
+      setAccount(acc);
+      const rewardContract = new ethers.Contract(
+        rewardContractAddress,
+        RewardABI,
+        signer
+      );
+
+      setRewardContract(rewardContract);
+    };
+    accountGetter();
+  }, [provider]);
   useEffect(() => {
     if (!rewardContract || !account) return;
-    const onAttendanceMarked = async () => {
+    const onAttendanceMarked = async (_: string, timestamp: BigInt) => {
       try {
         setLoading(true);
         if (
@@ -121,7 +144,9 @@ const CalendarComponent: React.FC = () => {
           const { data, error } = await supabase.from("attendance").insert([
             {
               id: account,
-              attendance_dates: [new Date()],
+              attendance_dates: [
+                new Date(parseInt(timestamp.toString()) * 1000),
+              ],
             },
           ]);
 
@@ -135,7 +160,7 @@ const CalendarComponent: React.FC = () => {
         ) {
           const updatedAttendanceDates = [
             ...attendanceData.attendance_dates,
-            new Date(),
+            new Date(parseInt(timestamp.toString()) * 1000),
           ];
           const { data, error } = await supabase
             .from("attendance")
@@ -164,6 +189,7 @@ const CalendarComponent: React.FC = () => {
   return (
     <Box w="full">
       <section>
+        <Button onClick={checkAttendance}>CheckAttendance</Button>
         <Flex bgColor={"cream"}>
           <Box
             backgroundImage="url('/assets/peaches.jpg')"
