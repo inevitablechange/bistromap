@@ -37,10 +37,10 @@ export default function Home() {
           PUBLISH YOUR THOUGHTS AND SHARE
         </Box>
         <Text fontSize={"md"} mt={6} mb={4}>
-          Welcome to Bistromap, where we take your cravings to a whole new
-          level! <br />
-          Our mouthwatering burgers are made from 100% beef and are served on
-          freshly baked buns.
+          Welcome to Bistromap, Share your reviews and get rewards. You can also
+          vote on reviews. <br />
+          Write the best review and vote for the best review. You will get
+          rewards.
         </Text>
         <Flex gap={6} justifyContent={"center"}>
           <Button

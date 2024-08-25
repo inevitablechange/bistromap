@@ -2,33 +2,60 @@ import { Badge, Box, Flex, Heading, Image, Text } from "@chakra-ui/react";
 import { IoRestaurantOutline } from "react-icons/io5";
 import { useRouter } from "next/navigation";
 
-const RestaurantCard = ({ card }: Publication) => {
-  const cleanMessage = card.content.replace(/<img\b[^>]*>/gi, "");
-  const firstImgSrcMatch = card.content.match(/<img[^>]+src="([^">]+)"/i);
+// RestaurantCard 컴포넌트의 Props 타입 정의
+interface RestaurantCardProps {
+  card: {
+    serial_number: string;
+    title: string;
+    restaurant: string;
+    content: string;
+    image?: string;
+    votes: number;
+    published_at: string;
+  };
+  onClick?: () => void; // 선택적 onClick 핸들러 추가
+}
+
+const RestaurantCard = ({ card, onClick }: RestaurantCardProps) => {
   const router = useRouter();
-  // Extract the src value (if found)
-  const firstImgSrc = firstImgSrcMatch ? firstImgSrcMatch[1] : null;
+
+  // HTML 콘텐츠에서 첫 번째 이미지를 제거
+  const cleanMessage = card.content.replace(/<img\b[^>]*>/gi, "");
+
+  // HTML 콘텐츠에서 첫 번째 이미지의 src를 추출
+  const firstImgSrcMatch = card.content.match(/<img[^>]+src="([^">]+)"/i);
+  const firstImgSrc = firstImgSrcMatch ? firstImgSrcMatch[1] : card.image;
+
+  // 날짜를 한국식으로 포맷팅하는 함수
   const getFormattedDate = (d: string) =>
     Intl.DateTimeFormat("ko-KR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     }).format(new Date(d));
+
   return (
     <Box
       borderRadius="lg"
       overflow="hidden"
       h={"500px"}
       cursor="pointer"
-      onClick={() => router.push(`/posts/${card.serial_number}`)}
+      onClick={() => {
+        if (onClick) {
+          onClick(); // 외부에서 전달된 onClick 핸들러가 있으면 호출
+        } else {
+          router.push(`/posts/${card.serial_number}`); // 기본 페이지 이동
+        }
+      }}
     >
       <Box>
         <Image
           w={"full"}
-          height={"300"}
+          height={"300px"}
           rounded="lg"
-          src={firstImgSrc}
+          src={firstImgSrc || "/images/default.png"}
           alt={card.restaurant}
+          objectFit="cover"
         />
       </Box>
 

@@ -2,21 +2,19 @@ import { Flex, Grid } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import supabase from "@/lib/supabaseClient";
 import RestaurantCard from "./RestaurantCard";
-
 const RestaurantCardList = () => {
   const [cards, setCards] = useState<Publication>([]);
   useEffect(() => {
     const getReviews = async () => {
       const { data: reviews, error } = await supabase
         .from("publications")
-        .select("*")
+        .select("")
         .order("published_at", { ascending: false });
       if (error) {
         return [];
       }
       setCards(reviews);
     };
-
     getReviews();
   }, []);
   if (cards.length == 0) return null;
@@ -33,9 +31,7 @@ const RestaurantCardList = () => {
       {cards.map((card: Publication) => (
         <RestaurantCard key={card.id} card={card} />
       ))}
-      <RestaurantCard card={cards[1]} />
     </Grid>
   );
 };
-
 export default RestaurantCardList;
