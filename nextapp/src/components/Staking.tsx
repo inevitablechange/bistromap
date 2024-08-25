@@ -10,17 +10,16 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ethers, Contract } from "ethers";
+import { ethers, Contract, BigNumberish } from "ethers";
 import { FC, useState } from "react";
 
 interface StakingProps {
   stakingContract: Contract | null;
   bsmContract: Contract | null;
-  STAKING_CONTRACT_ADDRESS: string;
   fetchBalances: () => Promise<void>;
   fetchStakedInfo: () => Promise<void>;
   canUnstake: boolean;
-  balance: { BSM: number };
+  balance: BigNumberish;
   stakedAmount: number;
   reward: number;
 }
@@ -28,7 +27,6 @@ interface StakingProps {
 const Staking: FC<StakingProps> = ({
   stakingContract,
   bsmContract,
-  STAKING_CONTRACT_ADDRESS,
   fetchBalances,
   fetchStakedInfo,
   canUnstake,
@@ -37,9 +35,18 @@ const Staking: FC<StakingProps> = ({
   reward,
 }) => {
   const [stakeAmount, setStakeAmount] = useState<string>("");
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isStakeLoading, setIsStakeLoading] = useState<boolean>(false);
+  const [isUnstakeLoading, setIsUnstakeLoading] = useState<boolean>(false);
 
   const handleStake = async () => {
     if (!stakingContract || !bsmContract || !stakeAmount) return;
+
+    setIsStakeLoading(true);
+
+    setError(null);
+    setStatus("Initiating Staking...");
     try {
       const amount = ethers.parseEther(stakeAmount);
       const minStakeAmount = ethers.parseEther("1");
@@ -54,7 +61,7 @@ const Staking: FC<StakingProps> = ({
 
       // Proceed with the staking process
       const approveTx = await bsmContract.approve(
-        STAKING_CONTRACT_ADDRESS,
+        stakingContract.getAddress(),
         amount
       );
       await approveTx.wait();
@@ -64,20 +71,63 @@ const Staking: FC<StakingProps> = ({
       fetchBalances();
       fetchStakedInfo();
       setStakeAmount("");
+      setIsStakeLoading(false);
     } catch (error) {
-      console.error("Staking failed:", error);
+      console.error("Stake failed:", error);
+      setIsStakeLoading(false);
+      let errorMessage = "An unknown error occurred";
+      if (error instanceof Error) {
+        if (
+          error.message.includes("user rejected") ||
+          error.message.includes("ACTION_REJECTED")
+        ) {
+          errorMessage = "Stake failed: Transaction rejected";
+        } else if (error.message.includes("INSUFFICIENT_FUNDS")) {
+          errorMessage = "Stake failed: Insufficient funds";
+        } else if (error.message.includes("transaction failed")) {
+          errorMessage = `Stake failed: Transaction failed`;
+        } else {
+          errorMessage = "Stake failed";
+        }
+      }
+      setError(errorMessage);
+      setStatus(null);
     }
   };
 
   const handleUnstake = async () => {
     if (!stakingContract || !canUnstake) return;
+
+    setIsUnstakeLoading(true);
+
+    setError(null);
+    setStatus("Initiating Unstaking...");
     try {
       const tx = await stakingContract.unstake();
       await tx.wait();
       fetchBalances();
       fetchStakedInfo();
+      setIsUnstakeLoading(false);
     } catch (error) {
-      console.error("Unstaking failed:", error);
+      console.error("Stake failed:", error);
+      setIsUnstakeLoading(false);
+      let errorMessage = "An unknown error occurred";
+      if (error instanceof Error) {
+        if (
+          error.message.includes("user rejected") ||
+          error.message.includes("ACTION_REJECTED")
+        ) {
+          errorMessage = "Stake failed: Transaction rejected";
+        } else if (error.message.includes("INSUFFICIENT_FUNDS")) {
+          errorMessage = "Stake failed: Insufficient funds";
+        } else if (error.message.includes("transaction failed")) {
+          errorMessage = `Stake failed: Transaction failed`;
+        } else {
+          errorMessage = "Stake failed";
+        }
+      }
+      setError(errorMessage);
+      setStatus(null);
     }
   };
 
@@ -161,7 +211,10 @@ const Staking: FC<StakingProps> = ({
                 <Button
                   flex={1}
                   onClick={handleStake}
-                  isDisabled={!stakeAmount || parseFloat(stakeAmount) < 1}
+                  isLoading={isStakeLoading}
+                  isDisabled={
+                    !stakeAmount || isStakeLoading || isUnstakeLoading
+                  }
                   fontSize="lg"
                   bg="yellow.300"
                   _hover={{ bg: "yellow.400" }}
@@ -172,7 +225,10 @@ const Staking: FC<StakingProps> = ({
                   flex={1}
                   variant="outline"
                   onClick={handleUnstake}
-                  isDisabled={!canUnstake}
+                  isLoading={isUnstakeLoading}
+                  isDisabled={
+                    !stakedAmount || isStakeLoading || isUnstakeLoading
+                  }
                   fontSize="lg"
                   bg="yellow.300"
                   _hover={{ bg: "yellow.400" }}
@@ -203,7 +259,7 @@ const Staking: FC<StakingProps> = ({
                     <Text fontSize="lg">BSM</Text>
                     <Spacer />
                     <Text fontSize="lg">
-                      {balance.BSM} ${balance.BSM.toFixed(2)}
+                      {Number(ethers.formatUnits(balance, 18)).toFixed(3)} BSM
                     </Text>
                   </HStack>
                 </Box>
@@ -218,7 +274,8 @@ const Staking: FC<StakingProps> = ({
                     <Text fontSize="lg">BSM</Text>
                     <Spacer />
                     <Text fontSize="lg">
-                      {stakedAmount.toFixed(2)} ${stakedAmount.toFixed(2)}
+                      {Number(ethers.formatUnits(stakedAmount, 18)).toFixed(3)}{" "}
+                      BSM
                     </Text>
                   </HStack>
                 </Box>
@@ -233,7 +290,7 @@ const Staking: FC<StakingProps> = ({
                     <Text fontSize="lg">BSM</Text>
                     <Spacer />
                     <Text fontSize="lg">
-                      {reward.toFixed(2)} ${reward.toFixed(2)}
+                      {Number(ethers.formatUnits(reward, 18)).toFixed(3)} BSM
                     </Text>
                   </HStack>
                 </Box>

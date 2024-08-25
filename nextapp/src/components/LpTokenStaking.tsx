@@ -10,62 +10,136 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { ethers, Contract } from "ethers";
+import { ethers, Contract, BigNumberish, JsonRpcSigner } from "ethers";
 import { FC, useState } from "react";
+import config from "@/constants/config";
 
 interface LpTokenStakingProps {
+  signer: JsonRpcSigner | null;
   lpTokenStakingContract: Contract | null;
   bsmContract: Contract | null;
-  LPTOKEN_STAKING_CONTRACT_ADDRESS: string;
+  lpTokenContract: Contract | null;
   fetchBalances: () => Promise<void>;
+  fetchLpTokenBalances: () => Promise<void>;
   fetchLpTokenStakedInfo: () => Promise<void>;
-  balance: { BSM: number };
+  lpTokenBalance: BigNumberish;
   lpTokenStakedAmount: number;
   lpTokenReward: number;
 }
 
 const LpTokenStaking: FC<LpTokenStakingProps> = ({
+  signer,
   lpTokenStakingContract,
   bsmContract,
-  LPTOKEN_STAKING_CONTRACT_ADDRESS,
+  lpTokenContract,
   fetchBalances,
+  fetchLpTokenBalances,
   fetchLpTokenStakedInfo,
-  balance,
+  lpTokenBalance,
   lpTokenStakedAmount,
   lpTokenReward,
 }) => {
   const [stakeAmount, setStakeAmount] = useState<string>("");
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isStakeLoading, setIsStakeLoading] = useState<boolean>(false);
+  const [isUnstakeLoading, setIsUnstakeLoading] = useState<boolean>(false);
 
   const handleStake = async () => {
     if (!lpTokenStakingContract || !bsmContract || !stakeAmount) return;
+
+    setIsStakeLoading(true);
+
+    setError(null);
+    setStatus("Initiating Staking...");
     try {
-      const amount = ethers.parseEther(stakeAmount);
-      const minStakeAmount = ethers.parseEther("1");
+      setStatus("Approving lpBSM spend...");
+      const allowance = await lpTokenContract?.allowance(
+        signer?.address,
+        config.LP_BSM_STAKING
+      );
+      const amountIn = ethers.parseUnits(stakeAmount, 18);
 
-      // Convert to BigInt for comparison
-      const minStakeAmountBigInt = BigInt(minStakeAmount.toString());
-      const amountBigInt = BigInt(amount.toString());
-
-      if (amountBigInt < minStakeAmountBigInt) {
-        throw new Error("Minimum stake amount is 1 BSM");
+      if (allowance < amountIn) {
+        const approveTx = await lpTokenContract?.approve(
+          config.LP_BSM_STAKING,
+          amountIn
+        );
+        await approveTx.wait();
       }
 
-      // Proceed with the staking process
-      const approveTx = await bsmContract.approve(
-        LPTOKEN_STAKING_CONTRACT_ADDRESS,
-        amount
-      );
-      await approveTx.wait();
-
-      const tx = await lpTokenStakingContract.stake(amount, {
+      setStatus("Staking lpBSM...");
+      const tx = await lpTokenStakingContract.deposit(amountIn, {
         gasLimit: 300000,
       });
+      setStatus("Waiting for transaction confirmation...");
       await tx.wait();
+
       fetchBalances();
+      fetchLpTokenBalances();
+      fetchLpTokenBalances();
       fetchLpTokenStakedInfo();
       setStakeAmount("");
+      setStatus("Stake successful!");
+      setIsStakeLoading(false);
     } catch (error) {
-      console.error("Staking failed:", error);
+      console.error("Stake failed:", error);
+      setIsStakeLoading(false);
+      let errorMessage = "An unknown error occurred";
+      if (error instanceof Error) {
+        if (
+          error.message.includes("user rejected") ||
+          error.message.includes("ACTION_REJECTED")
+        ) {
+          errorMessage = "Stake failed: Transaction rejected";
+        } else if (error.message.includes("INSUFFICIENT_FUNDS")) {
+          errorMessage = "Stake failed: Insufficient funds";
+        } else if (error.message.includes("transaction failed")) {
+          errorMessage = `Stake failed: Transaction failed`;
+        } else {
+          errorMessage = "Stake failed";
+        }
+      }
+      setError(errorMessage);
+      setStatus(null);
+    }
+  };
+
+  const handleUnstake = async () => {
+    if (!lpTokenStakingContract) return;
+
+    setIsUnstakeLoading(true);
+
+    setError(null);
+    setStatus("Initiating Unstaking...");
+    try {
+      const tx = await lpTokenStakingContract.withdraw();
+
+      await tx.wait();
+      fetchBalances();
+      fetchLpTokenBalances();
+      fetchLpTokenStakedInfo();
+      setIsUnstakeLoading(false);
+    } catch (error) {
+      console.error("Stake failed:", error);
+      setIsUnstakeLoading(false);
+      let errorMessage = "An unknown error occurred";
+      if (error instanceof Error) {
+        if (
+          error.message.includes("user rejected") ||
+          error.message.includes("ACTION_REJECTED")
+        ) {
+          errorMessage = "Stake failed: Transaction rejected";
+        } else if (error.message.includes("INSUFFICIENT_FUNDS")) {
+          errorMessage = "Stake failed: Insufficient funds";
+        } else if (error.message.includes("transaction failed")) {
+          errorMessage = `Stake failed: Transaction failed`;
+        } else {
+          errorMessage = "Stake failed";
+        }
+      }
+      setError(errorMessage);
+      setStatus(null);
     }
   };
 
@@ -139,11 +213,29 @@ const LpTokenStaking: FC<LpTokenStakingProps> = ({
                 <Button
                   flex={1}
                   onClick={handleStake}
+                  isLoading={isStakeLoading}
+                  isDisabled={
+                    !stakeAmount || isStakeLoading || isUnstakeLoading
+                  }
                   fontSize="lg"
                   bg="yellow.300"
                   _hover={{ bg: "yellow.400" }}
                 >
                   Stake
+                </Button>
+                <Button
+                  flex={1}
+                  variant="outline"
+                  onClick={handleUnstake}
+                  isLoading={isUnstakeLoading}
+                  isDisabled={
+                    !lpTokenStakedAmount || isStakeLoading || isUnstakeLoading
+                  }
+                  fontSize="lg"
+                  bg="yellow.300"
+                  _hover={{ bg: "yellow.400" }}
+                >
+                  Unstake
                 </Button>
               </HStack>
             </Box>
@@ -168,7 +260,12 @@ const LpTokenStaking: FC<LpTokenStakingProps> = ({
                     />
                     <Text fontSize="lg">lpBSM</Text>
                     <Spacer />
-                    <Text fontSize="lg">{balance.BSM.toFixed(2)} lpBSM</Text>
+                    <Text fontSize="lg">
+                      {Number(ethers.formatUnits(lpTokenBalance, 18)).toFixed(
+                        3
+                      )}{" "}
+                      lpBSM
+                    </Text>
                   </HStack>
                 </Box>
                 <Box>
@@ -182,7 +279,10 @@ const LpTokenStaking: FC<LpTokenStakingProps> = ({
                     <Text fontSize="lg">lpBSM</Text>
                     <Spacer />
                     <Text fontSize="lg">
-                      {lpTokenStakedAmount.toFixed(2)} lpBSM
+                      {Number(
+                        ethers.formatUnits(lpTokenStakedAmount, 18)
+                      ).toFixed(3)}{" "}
+                      lpBSM
                     </Text>
                   </HStack>
                 </Box>
@@ -196,13 +296,20 @@ const LpTokenStaking: FC<LpTokenStakingProps> = ({
                     />
                     <Text fontSize="lg">BSM</Text>
                     <Spacer />
-                    <Text fontSize="lg">{lpTokenReward.toFixed(2)} BSM</Text>
+                    <Text fontSize="lg">
+                      {Number(ethers.formatUnits(lpTokenReward, 18)).toFixed(3)}
+                      BSM
+                    </Text>
                   </HStack>
                 </Box>
               </VStack>
             </Box>
           </Flex>
         </VStack>
+        <Text marginTop={4} fontSize="20px" fontWeight="bold" align="center">
+          {status && <p>{status}</p>}
+          {error && <p>{error}</p>}
+        </Text>
       </Box>
     </Flex>
   );

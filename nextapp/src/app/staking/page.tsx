@@ -1,32 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Contract, ethers } from "ethers";
+import { BigNumberish, Contract, ethers } from "ethers";
 import { Button, Flex } from "@chakra-ui/react";
 
 import STAKING_CONTRACT_ABI from "../../abi/Staking.json";
 import LPTOKEN_STAKING_CONTRACT_ABI from "../../abi/LpTokenStaking.json";
 import BSM_TOKEN_ABI from "../../abi/BsmToken.json";
+import LP_TOKEN_ABI from "../../abi/UniswapPair.json";
 
-import { lpTokenStakingContractAddress as LPTOKEN_STAKING_CONTRACT_ADDRESS } from "../../constants/index";
-import { stakingContractAddress as STAKING_CONTRACT_ADDRESS } from "../../constants/index";
-import { bsmContractAddress as BSM_TOKEN_ADDRESS } from "../../constants/index";
 import { useAccount } from "@/context/AccountContext";
 
 import Staking from "@/components/Staking";
 import LpTokenStaking from "@/components/LpTokenStaking";
+import config from "@/constants/config";
 
 export default function BSMstake() {
   const { signer } = useAccount();
 
   const [activeComponent, setActiveComponent] =
     useState<string>("lpTokenStake");
-  const [balance, setBalance] = useState<{ BSM: number }>({ BSM: 0 });
+  const [balance, setBalance] = useState<BigNumberish>(BigInt(0));
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [bsmContract, setBsmContract] = useState<Contract | null>(null);
 
   // const related to Lp tokens Staking
+  const [lpTokenBalance, setLpTokenBalance] = useState<BigNumberish>(BigInt(0));
   const [lpTokenStakedAmount, setLpTokenStakedAmount] = useState<number>(0);
+  const [lpTokenContract, setLpTokenContract] = useState<Contract | null>(null);
   const [lpTokenStakingContract, setLpTokenStakingContract] =
     useState<Contract | null>(null);
   const [lpTokenReward, setLpTokenReward] = useState<number>(0);
@@ -41,19 +42,25 @@ export default function BSMstake() {
   const initializeEthers = async () => {
     try {
       const stakingContract = new ethers.Contract(
-        STAKING_CONTRACT_ADDRESS,
+        config.BSM_STAKING,
         STAKING_CONTRACT_ABI,
         signer
       );
 
       const lpTokenStakingContract = new ethers.Contract(
-        LPTOKEN_STAKING_CONTRACT_ADDRESS,
+        config.LP_BSM_STAKING,
         LPTOKEN_STAKING_CONTRACT_ABI,
         signer
       );
 
+      const lpTokenContract = new ethers.Contract(
+        config.UNISWAP_V2_PAIR,
+        LP_TOKEN_ABI,
+        signer
+      );
+
       const bsmToken = new ethers.Contract(
-        BSM_TOKEN_ADDRESS,
+        config.BSM_ADDRESS,
         BSM_TOKEN_ABI,
         signer
       );
@@ -61,7 +68,7 @@ export default function BSMstake() {
       setStakingContract(stakingContract);
       setLpTokenStakingContract(lpTokenStakingContract);
       setBsmContract(bsmToken);
-      setIsConnected(true);
+      setLpTokenContract(lpTokenContract);
     } catch (error) {
       console.error("Failed to connect to Ethereum:", error);
     }
@@ -70,13 +77,21 @@ export default function BSMstake() {
   const fetchBalances = async () => {
     if (signer && bsmContract) {
       try {
-        const address = await signer.getAddress();
-        const BSMBalance = await bsmContract.balanceOf(address);
-        setBalance({
-          BSM: parseFloat(ethers.formatEther(BSMBalance)),
-        });
+        const BSMBalance = await bsmContract.balanceOf(signer.address);
+        setBalance(BSMBalance);
       } catch (error) {
         console.error("Failed to fetch balances:", error);
+      }
+    }
+  };
+
+  const fetchLpTokenBalances = async () => {
+    if (signer && lpTokenContract) {
+      try {
+        const lpBSMBalance = await lpTokenContract.balanceOf(signer.address);
+        setLpTokenBalance(lpBSMBalance);
+      } catch (error) {
+        console.error("Failed to fetch Lp Token balances:", error);
       }
     }
   };
@@ -84,9 +99,10 @@ export default function BSMstake() {
   const fetchReward = async () => {
     if (signer && stakingContract) {
       try {
-        const address = await signer.getAddress();
-        const rewardAmount = await stakingContract.calculateReward(address);
-        setLpTokenReward(parseFloat(ethers.formatEther(rewardAmount)));
+        const rewardAmount = await stakingContract.calculateReward(
+          signer.address
+        );
+        setReward(rewardAmount);
       } catch (error) {
         console.error("Failed to fetch reward:", error);
       }
@@ -96,11 +112,16 @@ export default function BSMstake() {
   const fetchLpTokenReward = async () => {
     if (signer && lpTokenStakingContract) {
       try {
-        const address = await signer.getAddress();
-        const rewardAmount = await lpTokenStakingContract.calculateReward(
-          address
+        const lpTokenStakedInfo = await lpTokenStakingContract.getStakingAmount(
+          signer.address
         );
-        setReward(parseFloat(ethers.formatEther(rewardAmount)));
+        if (lpTokenStakedInfo) {
+          const rewardAmount = await lpTokenStakingContract.getPendingRewards(
+            signer.address
+          );
+
+          setLpTokenReward(rewardAmount);
+        }
       } catch (error) {
         console.error("Failed to fetch reward:", error);
       }
@@ -110,16 +131,15 @@ export default function BSMstake() {
   const fetchStakedInfo = async () => {
     if (signer && stakingContract) {
       try {
-        const address = await signer.getAddress();
-        const stakedInfo = await stakingContract.stakes(address);
-        setStakedAmount(parseFloat(ethers.formatEther(stakedInfo.amount)));
-        setStakedTimestamp(stakedInfo.timestamp.toNumber());
+        const stakedInfo = await stakingContract.stakes(signer.address);
+        setStakedAmount(stakedInfo.amount);
+        setStakedTimestamp(Number(stakedInfo.timestamp));
 
         // Calculate if the user can unstake
         const currentTimestamp = Math.floor(Date.now() / 1000); // 현재 시간을 초 단위로 변환
         const canUnstake =
           currentTimestamp >=
-          stakedInfo.timestamp.toNumber() + 24 * 7 * 24 * 60 * 60; // 24 weeks in seconds
+          Number(stakedInfo.timestamp) + 24 * 7 * 24 * 60 * 60; // 24 weeks in seconds
         setCanUnstake(canUnstake);
       } catch (error) {
         console.error("Failed to fetch staked information:", error);
@@ -130,13 +150,10 @@ export default function BSMstake() {
   const fetchLpTokenStakedInfo = async () => {
     if (signer && lpTokenStakingContract) {
       try {
-        const address = await signer.getAddress();
         const lpTokenStakedInfo = await lpTokenStakingContract.getStakingAmount(
-          address
+          signer.address
         );
-        setLpTokenStakedAmount(
-          parseFloat(ethers.formatEther(lpTokenStakedInfo.amount))
-        );
+        setLpTokenStakedAmount(lpTokenStakedInfo);
       } catch (error) {
         console.error("Failed to fetch staked information:", error);
       }
@@ -150,19 +167,33 @@ export default function BSMstake() {
   }, [signer]);
 
   useEffect(() => {
-    if (isConnected) {
-      //fetch bsm token balance
-      fetchBalances();
+    if (
+      !signer ||
+      !lpTokenContract ||
+      !bsmContract ||
+      !lpTokenStakingContract ||
+      !stakingContract
+    )
+      return;
 
-      //fetch lptoken staking info
-      fetchLpTokenReward();
-      fetchLpTokenStakedInfo();
+    //fetch bsm token balance
+    fetchBalances();
+    fetchLpTokenBalances();
 
-      //fetch staking info
-      fetchReward();
-      fetchStakedInfo();
-    }
-  }, [isConnected]);
+    //fetch lptoken staking info
+    fetchLpTokenReward();
+    fetchLpTokenStakedInfo();
+
+    //fetch staking info
+    fetchReward();
+    fetchStakedInfo();
+  }, [
+    signer,
+    lpTokenContract,
+    bsmContract,
+    lpTokenStakingContract,
+    stakingContract,
+  ]);
 
   return (
     <Flex flexDir={"column"} padding={"20"} minWidth={"800px"} align={"center"}>
@@ -188,12 +219,14 @@ export default function BSMstake() {
       </Flex>
       {activeComponent === "lpTokenStake" ? (
         <LpTokenStaking
+          signer={signer}
           lpTokenStakingContract={lpTokenStakingContract}
           bsmContract={bsmContract}
-          LPTOKEN_STAKING_CONTRACT_ADDRESS={LPTOKEN_STAKING_CONTRACT_ADDRESS}
+          lpTokenContract={lpTokenContract}
           fetchBalances={fetchBalances}
+          fetchLpTokenBalances={fetchLpTokenBalances}
           fetchLpTokenStakedInfo={fetchLpTokenStakedInfo}
-          balance={balance}
+          lpTokenBalance={lpTokenBalance}
           lpTokenStakedAmount={lpTokenStakedAmount}
           lpTokenReward={lpTokenReward}
         />
@@ -201,7 +234,6 @@ export default function BSMstake() {
         <Staking
           stakingContract={stakingContract}
           bsmContract={bsmContract}
-          STAKING_CONTRACT_ADDRESS={STAKING_CONTRACT_ADDRESS}
           fetchBalances={fetchBalances}
           fetchStakedInfo={fetchStakedInfo}
           canUnstake={canUnstake}
