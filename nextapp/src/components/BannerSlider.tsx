@@ -9,7 +9,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/scrollbar";
-import { Box, Flex } from "@chakra-ui/react";
+import { Box, Flex, Spinner } from "@chakra-ui/react";
 
 interface BannerSliderProps {
   setIsModalOpen: Dispatch<SetStateAction<boolean>>;
@@ -50,7 +50,23 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <Flex
+        height={300}
+        w="full"
+        justifyContent={"center"}
+        alignItems={"center"}
+      >
+        {" "}
+        <Spinner
+          thickness="6px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="yellow.400"
+          size="xl"
+        />
+      </Flex>
+    );
   }
 
   return (
@@ -83,7 +99,7 @@ const BannerSlider: React.FC<BannerSliderProps> = ({ setIsModalOpen }) => {
             display: "block",
             position: "relative",
             width: "100%",
-            height: "400px",
+            height: "300px",
           }}
         >
           <img

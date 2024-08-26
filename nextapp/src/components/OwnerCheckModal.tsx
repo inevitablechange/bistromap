@@ -33,7 +33,7 @@ const OwnerCheckModal: FC<OwnerCheckModalProps> = ({ isOpen }) => {
           </ModalBody>
           <ModalFooter>
             <Button
-              colorScheme="blue"
+              colorScheme="yellow.400"
               mr={3}
               onClick={() => router.push("/mint")}
             >

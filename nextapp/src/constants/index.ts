@@ -4,11 +4,12 @@ const dateCheckerContractAddress = "0x90d144033f09cf9126166070ff5f27e5c456178c";
 const rewardContractAddress = "0x3F632c8AdFA297d78e4233aB19ae1BCda0CF1513";
 const lpTokenStakingContractAddress =
   "0x349922B6f443D55CC9445C483aD9deffcF2a5fAc";
-
+const nftContractAddress = "0xA6677DD9FcD2FD71085f199455a121caaeE69853";
 export {
   bsmContractAddress,
   stakingContractAddress,
   dateCheckerContractAddress,
   rewardContractAddress,
   lpTokenStakingContractAddress,
+  nftContractAddress,
 };
