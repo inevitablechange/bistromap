@@ -17,7 +17,7 @@ import { useAccount } from "@/context/AccountContext";
 import { redirect } from "next/navigation";
 import config from "@/constants/config";
 import bsmABI from "@/abi/BsmToken.json";
-import bannerABI from "@/abi/BannerNFT.json";
+import bannerABI from "../../abi/BannerNFT.json";
 
 const NFT_PRICE = ethers.parseUnits("2000", 18); // 2000 BSM, 18 decimals
 
