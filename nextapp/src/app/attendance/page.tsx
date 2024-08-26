@@ -73,21 +73,13 @@ const Page: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    function listenToEvent() {
-      const rewardContract = new ethers.Contract(
-        config.REVIEW_REWARD,
-        RewardABI,
-        signer
-      );
-      setRewardContract(rewardContract);
-      rewardContract.on("AttendanceMarked", onAttendanceMarked);
-    }
-    listenToEvent();
+    if (!rewardContract) return;
+    rewardContract.on("AttendanceMarked", onAttendanceMarked);
+
     () => {
-      rewardContract.off("AttendanceMarked", onAttendanceMarked);
-      return;
+      return rewardContract.off("AttendanceMarked", onAttendanceMarked);
     };
-  }, []);
+  }, [rewardContract]);
 
   useEffect(() => {
     if (!account) return;
@@ -112,7 +104,12 @@ const Page: React.FC = () => {
       if (account) {
         setLoading(true);
         try {
-          const userAttendance = await rewardContract.getUserAttendance();
+          const contact = new ethers.Contract(
+            config.REVIEW_REWARD,
+            RewardABI,
+            signer
+          );
+          const userAttendance = await contact.getUserAttendance();
           const timestamps = userAttendance.dates.map(
             (date: BigInt) => Number(date) * 1000
           );
@@ -180,6 +177,12 @@ const Page: React.FC = () => {
     if (account) {
       setLoading(true);
       try {
+        const rewardContract = new ethers.Contract(
+          config.REVIEW_REWARD,
+          RewardABI,
+          signer
+        );
+        setRewardContract(rewardContract);
         const tx = await rewardContract.markAttendance();
         const receipt = await tx.wait();
         console.log({ receipt });
@@ -193,6 +196,12 @@ const Page: React.FC = () => {
         });
       } finally {
         setLoading(false);
+        toast({
+          title: "Transaction Sent Successfully",
+          status: "success",
+          duration: 7000,
+          isClosable: true,
+        });
       }
     }
   };
@@ -200,6 +209,11 @@ const Page: React.FC = () => {
   const onAttendanceMarked = async (userAddress: string, timestamp: BigInt) => {
     try {
       console.log("handler called", userAddress, timestamp);
+      setAttendanceData((prev) => {
+        prev[new Date(Number(timestamp) * 1000).toString()] = 1;
+        return prev;
+      });
+      new Date(Number(timestamp) * 1000);
       setLoading(true);
       if (
         Array.isArray(attendanceData.attendance_dates) &&
