@@ -99,6 +99,7 @@ const Page: React.FC = () => {
     };
     getAttendance();
   }, [account]);
+
   const uploadToSupabase = async () => {
     try {
       if (account) {
@@ -140,6 +141,7 @@ const Page: React.FC = () => {
       console.error(e);
     }
   };
+
   const formatDate = (date: Date) => {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -157,32 +159,14 @@ const Page: React.FC = () => {
     } else {
       return null;
     }
-    return obj;
   }
-  const tileContent = ({ date }: { date: Date }) => {
-    if (attendanceData[formatDate(date)]) {
-      if (formatDate(new Date()) === formatDate(date)) {
-        setTimeout(() => {
-          setHasMarkedToday(true);
-        }, 0);
-      }
-      return <FaCheck color="green" fontSize={24} />;
-    } else {
-      return null;
-    }
-  };
+
   const handleAttendanceCheck = async () => {
     console.log("handleAttendanceCheck");
 
     if (account) {
       setLoading(true);
       try {
-        const rewardContract = new ethers.Contract(
-          config.REVIEW_REWARD,
-          RewardABI,
-          signer
-        );
-        setRewardContract(rewardContract);
         const tx = await rewardContract.markAttendance();
         const receipt = await tx.wait();
         console.log({ receipt });
@@ -255,10 +239,26 @@ const Page: React.FC = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
+    const rewardContract = new ethers.Contract(
+      config.REVIEW_REWARD,
+      RewardABI,
+      signer
+    );
+
+    setRewardContract(rewardContract);
+  }, [signer]);
+
+  useEffect(() => {
+    if (!rewardContract) return;
+
+    rewardContract.on("AttendanceMarked", onAttendanceMarked);
     // Clean up the event listener when the component unmounts or dependencies change
-    return () => {};
-  }, []);
+    return () => {
+      rewardContract.off("AttendanceMarked");
+    };
+  }, [rewardContract]);
 
   return (
     <Box w="full">
