@@ -47,7 +47,7 @@ const LoaderModal: FC<LoaderModalProps> = ({ isOpen, setIsModalOpen }) => {
           </Flex>
         </ModalBody>
         <ModalFooter>
-          <Button bgColor={"indigoNight"} mr={3} onClick={handleClose}>
+          <Button bgColor={"gray.300"} mr={3} onClick={handleClose}>
             Close
           </Button>
         </ModalFooter>

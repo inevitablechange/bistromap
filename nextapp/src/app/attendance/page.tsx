@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Calendar from "react-calendar";
+import Calendar, { TileArgs } from "react-calendar";
 import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
 import "react-calendar/dist/Calendar.css";
@@ -9,41 +9,71 @@ import { useAccount } from "@/context/AccountContext";
 import { rewardContractAddress } from "@/constants";
 import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import "./calendar.css";
-import { ethers, Signer } from "ethers";
+import { BrowserProvider, ethers, Signer } from "ethers";
 import { FaCheck } from "react-icons/fa";
 interface AttendanceData {
   [key: string]: number;
 }
+interface AttendancObject {
+  [key: string]: number;
+}
 
-const CalendarComponent: React.FC = () => {
+const Page: React.FC = () => {
+  const [account, setAccount] = useState<string>("");
+  const [attendanceObject, setAttendanceObject] = useState<AttendancObject>({});
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
-
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
 
-  const { account, signer }: { account: string | null; signer: Signer | null } =
-    useAccount();
+  const {
+    provider,
+  }: { provider: BrowserProvider | null; signer: Signer | null } = useAccount();
+
+  async function fetchUserAttendance() {
+    if (!account || !rewardContract) return;
+    try {
+      console.log("fetch");
+      // 스마트 계약과 상호작용하여 데이터 가져오기
+      const data = await rewardContract.getUserAttendance();
+      const dateArray = data.dates.map((el: BigInt) =>
+        new Date(parseInt(el.toString()) * 1000).toISOString()
+      );
+      setAttendanceData(dateArray);
+      const makeAttendanceObject = (attendanceDates: string[]) => {
+        const obj: AttendanceData = {};
+        for (let date of attendanceDates) {
+          const key: string = formatDate(new Date(date));
+          obj[key] = 1;
+        }
+        return obj;
+      };
+      setAttendanceObject(makeAttendanceObject(dateArray));
+      console.log("User Attendance:", data);
+    } catch (error) {
+      console.error("Error fetching attendance:", error);
+    }
+  }
+  useEffect(() => {
+    const accountGetter = async () => {
+      if (!provider) return;
+      const signer = await provider.getSigner();
+      const acc = await signer.getAddress();
+      setAccount(acc);
+      const rewardContract = new ethers.Contract(
+        rewardContractAddress,
+        RewardABI,
+        signer
+      );
+      setRewardContract(rewardContract);
+    };
+    accountGetter();
+  }, []);
 
   useEffect(() => {
-    if (!account) return;
-    const getAttendance = async () => {
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("id", account)
-        .maybeSingle();
-      if (data && data.attendance_dates) {
-        const ret = makeAttendanceData(data.attendance_dates);
-        setAttendanceData(ret);
-      }
-      if (error) {
-        console.error(error);
-      }
-    };
-    getAttendance();
-  }, [account]);
+    fetchUserAttendance();
+  }, []);
 
   const formatDate = (date: Date) => {
     const d = new Date(date);
@@ -52,39 +82,23 @@ const CalendarComponent: React.FC = () => {
     const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
-  const makeAttendanceData = (attendanceDates: string[]) => {
-    const obj: AttendanceData = {};
-    for (let date of attendanceDates) {
-      const key: string = formatDate(new Date(date));
-      obj[key] = 1;
+
+  function tileRender(content: TileArgs) {
+    if (attendanceObject[formatDate(content.date)]) {
+      setTimeout(() => {
+        setHasMarkedToday(true);
+      }, 0);
+      return <FaCheck color="green" fontSize={24} />;
+    } else {
+      return null;
     }
-    return obj;
-  };
-  const tileContent = ({ date }: { date: Date }) => {
-    setTimeout(() => {
-      if (attendanceData[formatDate(date)]) {
-        if (formatDate(new Date()) === formatDate(date)) {
-          setHasMarkedToday(true);
-        }
-        return <FaCheck color="green" fontSize={24} />;
-      } else {
-        return null;
-      }
-    }, 0);
-  };
+  }
   const handleAttendanceCheck = async () => {
-    console.log("handleAttendanceCheck");
     if (account) {
       setLoading(true);
       setMessage(null);
       try {
-        const contract = new ethers.Contract(
-          rewardContractAddress,
-          RewardABI,
-          signer
-        );
-        setRewardContract(contract);
-        contract.markAttendance();
+        rewardContract.markAttendance();
       } catch (error) {
       } finally {
         setLoading(false);
@@ -92,65 +106,49 @@ const CalendarComponent: React.FC = () => {
     }
   };
   const sendSupabase = async () => {
-    // @ts-ignore
-    const { data, error } = await supabase.from("attendance").insert([
-      {
-        id: account,
-        attendance_dates: [new Date().toISOString()], // Initialize the array with today's timestamp
-      },
-    ]);
+    await onAttendanceMarked();
+  };
+  const onAttendanceMarked = async () => {
+    try {
+      if (!account) return;
+      setLoading(true);
+      if (Array.isArray(attendanceData) && attendanceData.length == 0) {
+        // @ts-ignore
+        const { data, error } = await supabase.from("attendance").insert([
+          {
+            id: account,
+            attendance_dates: [new Date()],
+          },
+        ]);
 
-    if (error) {
-      throw error;
+        if (error) {
+          throw error;
+        }
+        console.log("New attendance record created:", data);
+      } else if (Array.isArray(attendanceData) && attendanceData.length > 0) {
+        const updatedAttendanceDates = [
+          ...attendanceData,
+          new Date().toISOString(),
+        ];
+        console.log("updated");
+        const { data, error } = await supabase
+          .from("attendance")
+          .update({ attendance_dates: updatedAttendanceDates })
+          .eq("id", account);
+
+        if (error) {
+          throw error;
+        }
+        console.log("Attendance record updated:", data);
+      }
+    } catch (e) {
+      console.error("Error checking attendance:", e);
+    } finally {
+      setLoading(false);
     }
-    console.log("New attendance record created:", data);
   };
   useEffect(() => {
     if (!rewardContract || !account) return;
-    const onAttendanceMarked = async () => {
-      try {
-        setLoading(true);
-        if (
-          Array.isArray(attendanceData.attendance_dates) &&
-          attendanceData.attendance_dates.length == 0
-        ) {
-          // @ts-ignore
-          const { data, error } = await supabase.from("attendance").insert([
-            {
-              id: account,
-              attendance_dates: [new Date()],
-            },
-          ]);
-
-          if (error) {
-            throw error;
-          }
-          console.log("New attendance record created:", data);
-        } else if (
-          Array.isArray(attendanceData.attendance_dates) &&
-          attendanceData.attendance_dates.length > 0
-        ) {
-          const updatedAttendanceDates = [
-            ...attendanceData.attendance_dates,
-            new Date(),
-          ];
-          const { data, error } = await supabase
-            .from("attendance")
-            .update({ attendance_dates: updatedAttendanceDates })
-            .eq("id", account);
-
-          if (error) {
-            throw error;
-          }
-          console.log("Attendance record updated:", data);
-        }
-      } catch (e) {
-        // @ts-ignore
-        console.error("Error checking attendance:", e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     rewardContract.on("AttendanceMarked", onAttendanceMarked);
 
     // Clean up the event listener when the component unmounts or dependencies change
@@ -184,6 +182,7 @@ const CalendarComponent: React.FC = () => {
             >
               Daily Check-in Event
             </Heading>
+            <Button onClick={sendSupabase}>attendance mark</Button>
             <Box mt={10}>
               <Text fontSize={"x-large"} color={"gray.800"} mt={4}>
                 Receive 0.1 BSM for checking in each day.
@@ -223,8 +222,7 @@ const CalendarComponent: React.FC = () => {
           {
             <Calendar
               tileDisabled={() => true}
-              // @ts-ignore
-              tileContent={tileContent}
+              tileContent={tileRender}
               locale="en-US"
               className={"custom-calendar"}
             />
@@ -249,4 +247,4 @@ const CalendarComponent: React.FC = () => {
   );
 };
 
-export default CalendarComponent;
+export default Page;

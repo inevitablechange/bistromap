@@ -16,7 +16,7 @@ import {
 import { useForm, FormProvider } from "react-hook-form";
 import { FC, useEffect, useState } from "react";
 import "react-quill/dist/quill.snow.css";
-import { rewardContractAddress } from "@/constants";
+import config from "@/constants/config";
 import GoogleMaps from "@/components/GoogleMaps";
 import QuillEditor from "@/components/QuillEditor";
 import { useAccount } from "@/context/AccountContext";
@@ -27,13 +27,13 @@ import { useRouter } from "next/navigation";
 
 const Edit: FC = () => {
   const [contract, setContract] = useState<any>(null);
-  const [content, setContent] = useState<string | null | undefined>("");
+  const [content, setContent] = useState<string>("");
   const [length, setLength] = useState<number>(0);
   const [getDummyDataOn, setGetDummyDataOn] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [account, setAccount] = useState<string>("");
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const toast = useToast();
   const methods = useForm();
   const router = useRouter();
@@ -49,7 +49,7 @@ const Edit: FC = () => {
       const acc = await signer.getAddress();
       setAccount(acc);
       const rewardContract = new ethers.Contract(
-        rewardContractAddress,
+        config.REVIEW_REWARD,
         RewardABI,
         signer
       );
@@ -63,46 +63,6 @@ const Edit: FC = () => {
     setSelectedLocation(location);
     setIsMapOpen(false); // 선택 후 구글 맵 닫기
   };
-  const upload = async () => {
-    if (!contract) return;
-    const review = await contract.getReview(1);
-    const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
-
-    // Save to Supabase
-    // @ts-ignore
-    const { error } = await supabase.from("publications").insert([
-      {
-        user_address: review.writer,
-        title: review.title,
-        content: decodedContent,
-        restaurant: review.restaurant,
-        longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
-        latitude: parseInt(review.latitude) / Math.pow(10, 6),
-        published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
-        serial_number: 1,
-        votes: 0,
-      },
-    ]);
-    if (error) {
-      toast({
-        title: "Oops! There was an error",
-        description: error.message,
-        status: "error",
-        duration: 7000,
-        isClosable: true,
-      });
-      console.log(error);
-    } else {
-      toast({
-        title: "success!",
-        status: "success",
-        duration: 4000,
-        isClosable: true,
-      });
-      router.push("/");
-    }
-  };
-
   const getDummyData = (values: any) => {
     const obj = {
       user_address: account,
@@ -122,7 +82,7 @@ const Edit: FC = () => {
       if (!contract) {
         throw Error("No contract");
       }
-      setIsModalOpen(true);
+      setIsLoading(true);
       console.log("values::", values);
       values.content = content;
 
@@ -139,7 +99,7 @@ const Edit: FC = () => {
     } catch (e) {
       console.error(e);
     } finally {
-      setIsModalOpen(false);
+      setIsLoading(false);
     }
   }
 
@@ -149,7 +109,7 @@ const Edit: FC = () => {
     const onPublished = async (user_address: string, serial_number: string) => {
       try {
         console.log("Published event detected:");
-        setIsModalOpen(true);
+        setIsLoading(true);
         // Fetch review details from contract
         const review = await contract.getReview(serial_number);
         const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
@@ -182,7 +142,15 @@ const Edit: FC = () => {
       } catch (e) {
         console.log(e);
       } finally {
-        setIsModalOpen(false);
+        toast({
+          title: "Success",
+          duration: 4000,
+          isClosable: true,
+        });
+        setTimeout(() => {
+          router.push("/");
+        }, 1000);
+        setIsLoading(false);
       }
     };
     console.log({ contract });
@@ -197,7 +165,6 @@ const Edit: FC = () => {
   return (
     <Box w={"100%"} min-height="calc(100vh - 60px)">
       <Box width={"1024px"} marginX="auto">
-        <Button onClick={upload}>Trigger Event</Button>
         <FormProvider {...methods}>
           <Flex width={"full"}>
             <Button
@@ -287,15 +254,16 @@ const Edit: FC = () => {
                   </Flex>
                 </Flex>
                 <QuillEditor
-                  content={content}
+                  content={content || ""}
                   setContent={setContent}
                   setLength={setLength}
+                  setIsLoading={setIsLoading}
                 />
               </Box>
             </form>
           </Flex>
         </FormProvider>
-        <LoaderModal isOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
+        <LoaderModal isOpen={isLoading} setIsModalOpen={setIsLoading} />
       </Box>
     </Box>
   );
