@@ -25,21 +25,9 @@ import { BrowserProvider, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 import { useRouter } from "next/navigation";
 
-interface ReviewData {
-  user_address: string; // 이더리움 주소, 42자짜리 문자열
-  id: number;
-  serial_number: number;
-  title: string; // 리뷰 제목
-  content: string; // 리뷰 내용
-  restaurant: string; // 방문한 장소 이름
-  longitude: number; // 경도 (예: -122.4194)
-  latitude: number; // 위도 (예: 37.7749)
-  published_at: string; // 발행 시간 (ISO 포맷)
-}
-
 const Edit: FC = () => {
   const [contract, setContract] = useState<any>(null);
-  const [content, setContent] = useState<string>("");
+  const [content, setContent] = useState<string | null | undefined>("");
   const [length, setLength] = useState<number>(0);
   const [getDummyDataOn, setGetDummyDataOn] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
@@ -49,11 +37,7 @@ const Edit: FC = () => {
   const toast = useToast();
   const methods = useForm();
   const router = useRouter();
-  const {
-    handleSubmit,
-    register,
-    formState: { errors, isSubmitting },
-  } = methods;
+  const { handleSubmit, register } = methods;
   const {
     provider,
   }: { provider: BrowserProvider | null; signer: Signer | null } = useAccount();
@@ -89,13 +73,13 @@ const Edit: FC = () => {
     const { error } = await supabase.from("publications").insert([
       {
         user_address: review.writer,
-        serial_number: 1,
         title: review.title,
         content: decodedContent,
-        published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
         restaurant: review.restaurant,
         longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
         latitude: parseInt(review.latitude) / Math.pow(10, 6),
+        published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
+        serial_number: 1,
         votes: 0,
       },
     ]);
