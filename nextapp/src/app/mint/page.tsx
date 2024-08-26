@@ -16,7 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { useAccount } from "@/context/AccountContext";
 import { redirect } from "next/navigation";
-import { bsmContractAddress } from "@/constants";
+import config from "@/constants/config";
 import bsmABI from "@/abi/BsmToken.json";
 const bannerNFTAddress = "0xA6677DD9FcD2FD71085f199455a121caaeE69853";
 
@@ -90,7 +90,7 @@ const MintPage: React.FC = () => {
       BannerNFT.abi,
       signer
     );
-    const bsmContract = new ethers.Contract(bsmContractAddress, bsmABI, signer);
+    const bsmContract = new ethers.Contract(config.BSM_ADDRESS, bsmABI, signer);
 
     try {
       setLoading(true);

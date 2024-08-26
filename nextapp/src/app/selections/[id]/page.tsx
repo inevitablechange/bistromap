@@ -7,7 +7,7 @@ import { useAccount } from "@/context/AccountContext";
 import { Box, Button, Flex, Heading, useToast } from "@chakra-ui/react";
 import { IoLocation } from "react-icons/io5";
 import VoteModal from "@/components/VoteModal";
-import { rewardContractAddress, bsmContractAddress } from "@/constants";
+import config from "@/constants/config";
 import RewardABI from "@/abi/Reward.json";
 import TokenABI from "@/abi/BsmToken.json";
 
@@ -32,7 +32,7 @@ const Page: FC<NextPage> = () => {
       return;
     }
     try {
-      await tokenContract.approve(rewardContractAddress, VOTE_COST);
+      await tokenContract.approve(config.REVIEW_REWARD, VOTE_COST);
       await contract.vote(params.id);
     } catch (e) {
       console.error("Error fetching vote data:", e);
@@ -50,13 +50,13 @@ const Page: FC<NextPage> = () => {
       if (!provider) return;
       const signer = await provider.getSigner();
       const rewardContract = new ethers.Contract(
-        rewardContractAddress,
+        config.REVIEW_REWARD,
         RewardABI,
         signer
       );
 
       const bsmContract = new ethers.Contract(
-        bsmContractAddress,
+        config.BSM_ADDRESS,
         TokenABI,
         signer
       );
