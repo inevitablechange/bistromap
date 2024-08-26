@@ -21,8 +21,10 @@ import PAIR_ABI from "../../abi/UniswapPair.json";
 import config from "@/constants/config";
 import RestaurantCard from "@/components/RestaurantCard";
 import supabase from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 const MyPage: FC = () => {
+  const router = useRouter();
   const { signer } = useAccount();
 
   const [bsmContract, setBsmContract] = useState<Contract | null>(null);
@@ -120,7 +122,13 @@ const MyPage: FC = () => {
           justifyContent={"around"}
         >
           {cards.map((card: Publication) => (
-            <RestaurantCard key={card.id} card={card} />
+            <RestaurantCard
+              onClick={() => {
+                router.push(`/posts/${card.serial_number}`);
+              }}
+              key={card.id}
+              card={card}
+            />
           ))}
         </Grid>
       </Box>
