@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import BannerNFT from "../../../../solidity/artifacts/contracts/BannerNFT.sol/BannerNFT.json";
 import axios from "axios";
 import {
   Box,
@@ -18,7 +17,8 @@ import { useAccount } from "@/context/AccountContext";
 import { redirect } from "next/navigation";
 import { bsmContractAddress } from "@/constants";
 import bsmABI from "@/abi/BsmToken.json";
-const bannerNFTAddress = "0xA6677DD9FcD2FD71085f199455a121caaeE69853";
+import bannerABI from "@/abi/BannerNFT.json";
+import { nftContractAddress } from "@/constants";
 
 const NFT_PRICE = ethers.parseUnits("2000", 18); // 2000 BSM, 18 decimals
 
@@ -86,8 +86,8 @@ const MintPage: React.FC = () => {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const nftContract = new ethers.Contract(
-      bannerNFTAddress,
-      BannerNFT.abi,
+      nftContractAddress,
+      bannerABI,
       signer
     );
     const bsmContract = new ethers.Contract(bsmContractAddress, bsmABI, signer);
@@ -95,11 +95,11 @@ const MintPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // 파일을 IPFS에 업로드
-      const imageUrl = await uploadToIPFS(file);
-
       // NFT 민팅을 위한 승인 처리
-      const allowance = await bsmContract.allowance(account, bannerNFTAddress);
+      const allowance = await bsmContract.allowance(
+        account,
+        nftContractAddress
+      );
       const allowanceValue = allowance.toString();
 
       if (
@@ -107,12 +107,14 @@ const MintPage: React.FC = () => {
         parseFloat(ethers.formatUnits(NFT_PRICE, 18))
       ) {
         const approveTx = await bsmContract.approve(
-          bannerNFTAddress,
+          nftContractAddress,
           NFT_PRICE
         );
         await approveTx.wait();
       }
 
+      // 파일을 IPFS에 업로드
+      const imageUrl = await uploadToIPFS(file);
       // NFT 민팅
       const tx = await nftContract.mintNFT(imageUrl);
       await tx.wait();
