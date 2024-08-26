@@ -37,12 +37,14 @@ interface QuillEditorInterface {
   content: string;
   setContent: Dispatch<SetStateAction<string>>;
   setLength: Dispatch<SetStateAction<number>>;
+  setIsLoading: Dispatch<SetStateAction<boolean>>;
 }
 
 const QuillEditor: NextPage<QuillEditorInterface> = ({
   content,
   setContent,
   setLength,
+  setIsLoading,
 }) => {
   const quillRef = useRef<any>(null);
   useEffect(() => {
@@ -71,6 +73,7 @@ const QuillEditor: NextPage<QuillEditorInterface> = ({
     formData.append("pinataOptions", options);
 
     try {
+      setIsLoading(true);
       const response = await axios.post(
         "https://api.pinata.cloud/pinning/pinFileToIPFS",
         formData,
@@ -89,6 +92,8 @@ const QuillEditor: NextPage<QuillEditorInterface> = ({
     } catch (error) {
       console.error("Error uploading file to Pinata:", error);
       return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 

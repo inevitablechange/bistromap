@@ -3,14 +3,14 @@ import supabase from "@/lib/supabaseClient";
 import { FC, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAccount } from "@/context/AccountContext";
-import { Box, Button, Flex, Heading, useToast } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Input, useToast } from "@chakra-ui/react";
 import { IoLocation } from "react-icons/io5";
 import VoteModal from "@/components/VoteModal";
 import config from "@/constants/config";
 import RewardABI from "@/abi/Reward.json";
 import TokenABI from "@/abi/BsmToken.json";
 
-import { BrowserProvider, Contract, ethers } from "ethers";
+import { BrowserProvider, Contract, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 const VOTE_COST = 3 * Math.pow(10, 18);
 
@@ -20,10 +20,14 @@ const Page: FC = () => {
   const [data, setData] = useState<Publication>();
   const [address, setAddress] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [num, setNum] = useState<number>(1);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const params = useParams();
-  const { provider }: { provider: BrowserProvider | null } = useAccount();
+  const {
+    signer,
+    provider,
+  }: { signer: Signer | null; provider: BrowserProvider | null } = useAccount();
   const toast = useToast();
   const handleVote = async () => {
     if (!contract || !tokenContract) {
@@ -31,8 +35,16 @@ const Page: FC = () => {
       return;
     }
     try {
-      await tokenContract.approve(config.REVIEW_REWARD, VOTE_COST);
-      await contract.vote(params.id);
+      setLoading(true);
+      const tx = await tokenContract.approve(
+        config.REVIEW_REWARD,
+        BigInt(VOTE_COST)
+      );
+      const receipt = tx.wait();
+      console.log({ receipt });
+      const tx2 = await contract.vote(Number(params.id));
+      const receipt2 = tx2.wait();
+      console.log({ receipt2 });
     } catch (e) {
       console.error("Error fetching vote data:", e);
       toast({
@@ -43,6 +55,50 @@ const Page: FC = () => {
         duration: 7000,
         isClosable: true,
       });
+    } finally {
+      setLoading(false);
+      toast({
+        title: "Successfully Voted",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+      setIsModalOpen(false);
+    }
+  };
+
+  const getReviewAndUpload = async () => {
+    if (!provider) return;
+    const rewardContract = new ethers.Contract(
+      config.REVIEW_REWARD,
+      RewardABI,
+      signer
+    );
+    console.log({ rewardContract });
+    const review = await rewardContract.getReview(num);
+    const decodedContent = Buffer.from(review.content, "base64").toString();
+    const { error } = await supabase.from("publications").insert([
+      {
+        user_address: review.writer,
+        serial_number: num,
+        title: review.title,
+        content: decodedContent,
+        published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
+        restaurant: review.restaurant,
+        longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
+        latitude: parseInt(review.latitude) / Math.pow(10, 6),
+        votes: 0,
+      },
+    ]);
+    if (error) {
+      toast({
+        title: "Oops! There was an error",
+        description: error.message,
+        status: "error",
+        duration: 7000,
+        isClosable: true,
+      });
+      console.log(error);
     }
   };
   useEffect(() => {
@@ -69,6 +125,7 @@ const Page: FC = () => {
 
   useEffect(() => {
     if (!contract) return;
+    console.log("onVoted 가 한번도 안불리는지 확인");
     console.log("below onpublish");
     const onVoted = async (
       writerAddress: string,
@@ -78,13 +135,8 @@ const Page: FC = () => {
       try {
         console.log("Voted event detected:");
         setLoading(true);
-        // Fetch review details from contract
-        const review = await contract.getReview(serial_number);
-        const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
 
-        // Save to Supabase
-
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("publications")
           .update({ votes: parseInt(votes.toString()) })
           .eq("user_address", writerAddress);
@@ -146,6 +198,14 @@ const Page: FC = () => {
   return (
     <Box w={"100%"} height="fit-content">
       <Box width={"1024px"} marginX="auto">
+        <Flex>
+          <Input
+            type="text"
+            value={num}
+            onChange={(e) => setNum(Number(e.target.value))}
+          />
+          <Button onClick={getReviewAndUpload}>getReviewAndUpload</Button>
+        </Flex>
         <Flex
           width={"full"}
           justify={"space-between"}

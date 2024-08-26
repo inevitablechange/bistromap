@@ -250,7 +250,7 @@ contract Reward {
 
         // 스테이킹 여부 확인
         require(stakingContract.getStakeDetails(msg.sender).amount >= 1000 * BSM_DECIMALS, "Minimum staking amount not met");
-        bistroToken.approve(address(this), VOTE_COST); // 이거 한거 아닌가 ? 
+        // bistroToken.approve(address(this), VOTE_COST); // 이거 한거 아닌가 ? 
         require(bistroToken.transferFrom(msg.sender, address(this), VOTE_COST), "Transfer of BSM failed");
         rv.votes = rv.votes + 1;
         reviews[serialNumber].votedBy.push(msg.sender);
