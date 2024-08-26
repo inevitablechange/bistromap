@@ -2,7 +2,9 @@ import { Grid } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import supabase from "@/lib/supabaseClient";
 import RestaurantCard from "./RestaurantCard";
+import { useRouter } from "next/navigation";
 const RestaurantCardList = () => {
+  const router = useRouter();
   const [cards, setCards] = useState<Publication>([]);
   useEffect(() => {
     const getReviews = async () => {
@@ -30,7 +32,13 @@ const RestaurantCardList = () => {
       justifyContent={"around"}
     >
       {cards.map((card: Publication) => (
-        <RestaurantCard key={card.id} card={card} />
+        <RestaurantCard
+          key={card.id}
+          card={card}
+          onClick={() => {
+            router.push(`/posts/${card.serial_number}`);
+          }}
+        />
       ))}
     </Grid>
   );

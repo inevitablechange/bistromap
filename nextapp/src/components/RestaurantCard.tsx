@@ -1,17 +1,19 @@
 import { Badge, Box, Flex, Heading, Image, Text } from "@chakra-ui/react";
 import { IoRestaurantOutline } from "react-icons/io5";
-import { useRouter } from "next/navigation";
 
-const RestaurantCard = ({ card }: Publication) => {
-  const router = useRouter();
-
+const RestaurantCard = ({
+  card,
+  onClick,
+}: {
+  card: Publication;
+  onClick: () => void;
+}) => {
   // HTML 콘텐츠에서 첫 번째 이미지를 제거
   const cleanMessage = card.content.replace(/<img\b[^>]*>/gi, "");
 
   // HTML 콘텐츠에서 첫 번째 이미지의 src를 추출
   const firstImgSrcMatch = card.content.match(/<img[^>]+src="([^">]+)"/i);
   const firstImgSrc = firstImgSrcMatch ? firstImgSrcMatch[1] : card.image;
-
   // 날짜를 한국식으로 포맷팅하는 함수
   const getFormattedDate = (d: string) =>
     Intl.DateTimeFormat("ko-KR", {
@@ -26,16 +28,14 @@ const RestaurantCard = ({ card }: Publication) => {
       overflow="hidden"
       h={"500px"}
       cursor="pointer"
-      onClick={() => {
-        router.push(`/posts/${card.serial_number}`); // 기본 페이지 이동
-      }}
+      onClick={onClick}
     >
       <Box>
         <Image
           w={"full"}
           height={"300px"}
           rounded="lg"
-          src={firstImgSrc || "/images/default.png"}
+          src={firstImgSrc}
           alt={card.restaurant}
           objectFit="cover"
         />
