@@ -35,6 +35,7 @@ const OwnerCheckModal: FC<OwnerCheckModalProps> = ({ isOpen }) => {
             <Button
               colorScheme="yellow.400"
               mr={3}
+              type="button"
               onClick={() => router.push("/mint")}
             >
               I am a business owner

@@ -32,12 +32,12 @@ interface AddLiquidityProps {
 }
 
 const AddLiquidity: FC<AddLiquidityProps> = ({
-  signer,
   provider,
   account,
   bsmContract,
   usdtContract,
   routerContract,
+  pairContract,
   bsmBalance,
   usdtBalance,
   lpBalance,
@@ -64,24 +64,37 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
     }
 
     try {
-      const path = isBsmToUsdt
-        ? [config.BSM_ADDRESS, config.USDT_ADDRESS]
-        : [config.USDT_ADDRESS, config.BSM_ADDRESS];
-
       const amountIn = ethers.parseUnits(inputAmount, 18);
-      console.log(await provider.getNetwork(), signer, path);
 
       if (!bsmContract || !usdtContract || !routerContract) return;
 
-      const bsmReserve = bsmContract.balanceOf(config.UNISWAP_V2_ROUTER);
-      const usdtReserve = usdtContract.balanceOf(config.UNISWAP_V2_ROUTER);
-      const amountOut = await routerContract.quote(
-        amountIn,
-        bsmReserve,
-        usdtReserve
-      );
+      if (isBsmToUsdt) {
+        const bsmReserve = await bsmContract.balanceOf(config.UNISWAP_V2_PAIR);
+        const usdtReserve = await usdtContract.balanceOf(
+          config.UNISWAP_V2_PAIR
+        );
 
-      setOutputAmount(ethers.formatUnits(amountOut, isBsmToUsdt ? 18 : 18));
+        console.log(bsmContract, usdtContract, routerContract);
+        const amountOut = await routerContract?.quote(
+          amountIn,
+          bsmReserve,
+          usdtReserve
+        );
+
+        setOutputAmount(ethers.formatUnits(amountOut, isBsmToUsdt ? 18 : 18));
+      } else {
+        const bsmReserve = await bsmContract.balanceOf(config.UNISWAP_V2_PAIR);
+        const usdtReserve = await usdtContract.balanceOf(
+          config.UNISWAP_V2_PAIR
+        );
+
+        const amountOut = await routerContract?.quote(
+          amountIn,
+          usdtReserve,
+          bsmReserve
+        );
+        setOutputAmount(ethers.formatUnits(amountOut, isBsmToUsdt ? 18 : 18));
+      }
     } catch (error) {
       console.error("Error estimating output:", error);
     }
@@ -127,7 +140,7 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
         );
         const usdtAmount = ethers.parseUnits(outputAmount, 18);
         if (usdtAllowance < usdtAmount) {
-          const approveTx = await bsmContract?.approve(
+          const approveTx = await usdtContract?.approve(
             config.UNISWAP_V2_ROUTER,
             usdtAmount
           );
@@ -169,7 +182,7 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
 
         const usdtAmount = ethers.parseUnits(outputAmount, 18);
         if (usdtAllowance < usdtAmount) {
-          const approveTx = await bsmContract?.approve(
+          const approveTx = await usdtContract?.approve(
             config.UNISWAP_V2_ROUTER,
             usdtAmount
           );

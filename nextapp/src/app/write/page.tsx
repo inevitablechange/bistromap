@@ -85,6 +85,7 @@ const Edit: FC = () => {
     const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
 
     // Save to Supabase
+    // @ts-ignore
     const { error } = await supabase.from("publications").insert([
       {
         user_address: review.writer,
@@ -170,6 +171,7 @@ const Edit: FC = () => {
         const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
 
         // Save to Supabase
+        // @ts-ignore
         const { error } = await supabase.from("publications").insert([
           {
             user_address: review.writer,

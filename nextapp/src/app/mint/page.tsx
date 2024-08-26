@@ -18,7 +18,6 @@ import { redirect } from "next/navigation";
 import config from "@/constants/config";
 import bsmABI from "@/abi/BsmToken.json";
 import bannerABI from "@/abi/BannerNFT.json";
-import { nftContractAddress } from "@/constants";
 
 const NFT_PRICE = ethers.parseUnits("2000", 18); // 2000 BSM, 18 decimals
 
@@ -86,7 +85,7 @@ const MintPage: React.FC = () => {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const nftContract = new ethers.Contract(
-      nftContractAddress,
+      config.NFT_ADDRESS,
       bannerABI,
       signer
     );
@@ -98,7 +97,7 @@ const MintPage: React.FC = () => {
       // NFT 민팅을 위한 승인 처리
       const allowance = await bsmContract.allowance(
         account,
-        nftContractAddress
+        config.NFT_ADDRESS
       );
       const allowanceValue = allowance.toString();
 
@@ -107,7 +106,7 @@ const MintPage: React.FC = () => {
         parseFloat(ethers.formatUnits(NFT_PRICE, 18))
       ) {
         const approveTx = await bsmContract.approve(
-          nftContractAddress,
+          config.NFT_ADDRESS,
           NFT_PRICE
         );
         await approveTx.wait();

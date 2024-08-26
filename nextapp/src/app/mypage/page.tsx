@@ -41,6 +41,7 @@ const MyPage: FC = () => {
       const { data: reviews, error } = await supabase
         .from("publications")
         .select("*")
+        //@ts-ignore
         .eq("user_address", signer?.address)
         .order("published_at", { ascending: false });
       if (error) {

@@ -92,6 +92,7 @@ const CalendarComponent: React.FC = () => {
     }
   };
   const sendSupabase = async () => {
+    // @ts-ignore
     const { data, error } = await supabase.from("attendance").insert([
       {
         id: account,
@@ -113,6 +114,7 @@ const CalendarComponent: React.FC = () => {
           Array.isArray(attendanceData.attendance_dates) &&
           attendanceData.attendance_dates.length == 0
         ) {
+          // @ts-ignore
           const { data, error } = await supabase.from("attendance").insert([
             {
               id: account,
@@ -143,6 +145,7 @@ const CalendarComponent: React.FC = () => {
           console.log("Attendance record updated:", data);
         }
       } catch (e) {
+        // @ts-ignore
         console.error("Error checking attendance:", e.message);
       } finally {
         setLoading(false);
@@ -220,6 +223,7 @@ const CalendarComponent: React.FC = () => {
           {
             <Calendar
               tileDisabled={() => true}
+              // @ts-ignore
               tileContent={tileContent}
               locale="en-US"
               className={"custom-calendar"}

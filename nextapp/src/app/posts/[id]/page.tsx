@@ -1,6 +1,5 @@
 "use client";
 import supabase from "@/lib/supabaseClient";
-import { NextPage } from "next";
 import { FC, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAccount } from "@/context/AccountContext";
@@ -15,7 +14,7 @@ import { BrowserProvider, Contract, ethers } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 const VOTE_COST = 3 * Math.pow(10, 18);
 
-const Page: FC<NextPage> = () => {
+const Page: FC = () => {
   const [contract, setContract] = useState<Contract | null>(null);
   const [tokenContract, setTokenContract] = useState<Contract | null>(null);
   const [data, setData] = useState<Publication>();
@@ -38,6 +37,7 @@ const Page: FC<NextPage> = () => {
       console.error("Error fetching vote data:", e);
       toast({
         title: "Oops! There was an error",
+        // @ts-ignore
         description: e.message,
         status: "error",
         duration: 7000,
