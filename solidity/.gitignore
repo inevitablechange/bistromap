@@ -5,7 +5,7 @@ node_modules
 /cache
 /artifacts
 .states
-
+.deps
 # TypeChain files
 /typechain
 /typechain-types
