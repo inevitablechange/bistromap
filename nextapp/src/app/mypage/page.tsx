@@ -14,40 +14,13 @@ import {
 } from "@chakra-ui/react";
 import { BigNumberish, Contract, ethers } from "ethers";
 import { useAccount } from "@/context/AccountContext";
-import { IoRestaurantOutline } from "react-icons/io5";
 
 import USDT_ABI from "../../abi/UsdtToken.json";
 import BSM_ABI from "../../abi/BsmToken.json";
 import PAIR_ABI from "../../abi/UniswapPair.json";
 import config from "@/constants/config";
-
-interface ReviewData {
-  id: number;
-  title: string;
-  restaurant: string;
-  content: string;
-  votes: number;
-  published_at: string;
-}
-
-const dummyReviews: ReviewData[] = [
-  {
-    id: 1,
-    title: "Amazing Dining Experience at Tokyo Sushi",
-    restaurant: "Tokyo Sushi",
-    content: "The sushi was fresh and the service was amazing!",
-    votes: 120,
-    published_at: "2024-03-15T12:00:00Z",
-  },
-  {
-    id: 2,
-    title: "A Delightful Evening at French Bistro",
-    restaurant: "French Bistro",
-    content: "The atmosphere was perfect for a romantic dinner.",
-    votes: 98,
-    published_at: "2024-04-10T19:00:00Z",
-  },
-];
+import RestaurantCard from "@/components/RestaurantCard";
+import supabase from "@/lib/supabaseClient";
 
 const MyPage: FC = () => {
   const { signer } = useAccount();
@@ -59,6 +32,23 @@ const MyPage: FC = () => {
   const [bsmBalance, setBsmBalance] = useState<BigNumberish>(BigInt(0));
   const [usdtBalance, setUsdtBalance] = useState<BigNumberish>(BigInt(0));
   const [lpBalance, setLpBalance] = useState<BigNumberish>(BigInt(0));
+  const [cards, setCards] = useState<Publication>([]);
+
+  useEffect(() => {
+    const getReviews = async () => {
+      const { data: reviews, error } = await supabase
+        .from("publications")
+        .select("*")
+        .eq("user_address", signer?.address)
+        .order("published_at", { ascending: false });
+      if (error) {
+        return [];
+      }
+      setCards(reviews);
+      console.log({ reviews });
+    };
+    getReviews();
+  }, [signer]);
 
   useEffect(() => {
     if (!signer) return;
@@ -120,28 +110,18 @@ const MyPage: FC = () => {
         <Heading as="h2" size="lg" mb={4}>
           My Reviews
         </Heading>
-        <Grid templateColumns="repeat(3, 1fr)" gap={6}>
-          <Box
-            borderWidth={1}
-            p={4}
-            rounded="lg"
-            h="300px"
-            overflow="hidden"
-            bg="yellow.50"
-          >
-            <Heading size="md" mb={2}>
-              Review Title
-            </Heading>
-            <Flex align="center" mb={2}>
-              <IoRestaurantOutline /> <Text ml={2}>Review Restaurant</Text>
-            </Flex>
-            <Text fontSize="sm" mb={2}>
-              Review Content{" "}
-            </Text>
-            <Badge colorScheme="green" fontSize="md">
-              Review Votes{" "}
-            </Badge>
-          </Box>
+        <Grid
+          mx={"auto"}
+          mt={10}
+          mb={20}
+          gap={[4, 6, 8]}
+          templateColumns="repeat(3, 1fr)"
+          maxWidth={"1280px"}
+          justifyContent={"around"}
+        >
+          {cards.map((card: Publication) => (
+            <RestaurantCard key={card.id} card={card} />
+          ))}
         </Grid>
       </Box>
 
