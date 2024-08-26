@@ -24,7 +24,6 @@ import RewardABI from "@/abi/Reward.json";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 import { useRouter } from "next/navigation";
-import { dummyData } from "@/constants/data";
 
 interface ReviewData {
   user_address: string; // 이더리움 주소, 42자짜리 문자열

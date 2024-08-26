@@ -68,50 +68,6 @@ const Page: FC<NextPage> = () => {
   }, [provider]);
 
   useEffect(() => {
-    if (!contract) return;
-    console.log("below onpublish");
-    const onVoted = async (
-      writerAddress: string,
-      serial_number: string,
-      votes: BigInt
-    ) => {
-      try {
-        console.log("Voted event detected:");
-        setLoading(true);
-        // Fetch review details from contract
-        const review = await contract.getReview(serial_number);
-        const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
-
-        // Save to Supabase
-
-        const { data, error } = await supabase
-          .from("publications")
-          .update({ votes: parseInt(votes.toString()) })
-          .eq("user_address", writerAddress);
-        if (error) {
-          toast({
-            title: "Oops! There was an error",
-            description: error.message,
-            status: "error",
-            duration: 7000,
-            isClosable: true,
-          });
-          console.log(error);
-        }
-      } catch (e) {
-        console.log(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    contract.on("Voted", onVoted);
-
-    // Clean up the event listener when the component unmounts or dependencies change
-    return () => {
-      contract.off("Voted", onVoted);
-    };
-  }, [contract]);
-  useEffect(() => {
     if (!data) return;
     const getLocation = async () => {
       fetch(
@@ -156,14 +112,6 @@ const Page: FC<NextPage> = () => {
             {`${data.user_address?.slice(0, 4)}...${data.user_address?.slice(
               data.user_address.length - 4
             )}`}
-          </Button>
-          <Button
-            rounded="full"
-            bgColor="yellow.400"
-            type="submit"
-            onClick={() => setIsModalOpen((prev) => !prev)}
-          >
-            Vote for this article
           </Button>
         </Flex>
         <Box bgColor={"white"} py={6} px={3} rounded="lg">
