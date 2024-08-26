@@ -1,7 +1,7 @@
 // app > mypage > page.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -15,9 +15,9 @@ import {
 import { BigNumberish, Contract, ethers } from "ethers";
 import { useAccount } from "@/context/AccountContext";
 import { IoRestaurantOutline } from "react-icons/io5";
+
 import USDT_ABI from "../../abi/UsdtToken.json";
 import BSM_ABI from "../../abi/BsmToken.json";
-
 import PAIR_ABI from "../../abi/UniswapPair.json";
 import config from "@/constants/config";
 
@@ -47,10 +47,9 @@ const dummyReviews: ReviewData[] = [
     votes: 98,
     published_at: "2024-04-10T19:00:00Z",
   },
-  // 더미 리뷰 추가
 ];
 
-const MyPage: React.FC = () => {
+const MyPage: FC = () => {
   const { signer } = useAccount();
 
   const [bsmContract, setBsmContract] = useState<Contract | null>(null);
@@ -71,6 +70,8 @@ const MyPage: React.FC = () => {
     setBsmContract(bsmCtr);
     setUsdtContract(usdtCtr);
     setPairContract(pairCtr);
+
+    console.log(bsmContract, usdtContract, pairContract);
   }, [signer]);
 
   useEffect(() => {
@@ -101,13 +102,16 @@ const MyPage: React.FC = () => {
         </Heading>
         <Box borderWidth={1} p={4} rounded="lg" bg="yellow.100">
           <Text fontSize="xl" fontWeight="bold">
-            BSM Token Balance: {bsmBalance} BSM
+            BSM Token Balance:{" "}
+            {Number(ethers.formatUnits(bsmBalance, 18)).toFixed(3)} BSM
           </Text>
           <Text fontSize="xl" fontWeight="bold">
-            USDT Balance: {usdtBalance} USDT
+            USDT Balance:{" "}
+            {Number(ethers.formatUnits(usdtBalance, 18)).toFixed(3)} USDT
           </Text>
           <Text fontSize="xl" fontWeight="bold">
-            lpBSM Token Balance: {lpBalance} lpBSM
+            lpBSM Token Balance:{" "}
+            {Number(ethers.formatUnits(lpBalance, 18)).toFixed(3)} lpBSM
           </Text>
         </Box>
       </Box>
@@ -142,7 +146,7 @@ const MyPage: React.FC = () => {
       </Box>
 
       <Flex justify="center">
-        <Button bg="yellow.400" color="black" size="lg">
+        <Button href={"/write"} as="a" bg="yellow.400" color="black" size="lg">
           Write a New Review
         </Button>
       </Flex>
