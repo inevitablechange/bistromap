@@ -40,6 +40,19 @@
     "type": "event"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "claimVoterReward",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "markAttendance",
     "outputs": [],
@@ -106,19 +119,6 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "serialNumber",
-        "type": "uint256"
-      }
-    ],
-    "name": "vote",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -132,6 +132,12 @@
         "internalType": "uint256",
         "name": "reviewNumber",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "votes",
+        "type": "uint256"
       }
     ],
     "name": "Voted",
@@ -140,6 +146,19 @@
   {
     "stateMutability": "nonpayable",
     "type": "fallback"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "vote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "stateMutability": "payable",
@@ -308,6 +327,11 @@
             "internalType": "bool",
             "name": "expired",
             "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "elected",
+            "type": "bool"
           }
         ],
         "internalType": "struct Reward.Review[]",
@@ -441,6 +465,11 @@
         "internalType": "bool",
         "name": "expired",
         "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "elected",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -509,6 +538,11 @@
       {
         "internalType": "bool",
         "name": "expired",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "elected",
         "type": "bool"
       }
     ],
@@ -586,6 +620,11 @@
             "internalType": "bool",
             "name": "expired",
             "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "elected",
+            "type": "bool"
           }
         ],
         "internalType": "struct Reward.Review[]",
@@ -650,6 +689,11 @@
           {
             "internalType": "bool",
             "name": "expired",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "elected",
             "type": "bool"
           }
         ],

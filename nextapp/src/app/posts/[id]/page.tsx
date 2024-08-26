@@ -24,10 +24,7 @@ const Page: FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const params = useParams();
-  const {
-    signer,
-    provider,
-  }: { signer: Signer | null; provider: BrowserProvider | null } = useAccount();
+
   const toast = useToast();
   const handleVote = async () => {
     if (!contract || !tokenContract) {
@@ -40,10 +37,10 @@ const Page: FC = () => {
         config.REVIEW_REWARD,
         BigInt(VOTE_COST)
       );
-      const receipt = tx.wait();
+      const receipt = await tx.wait();
       console.log({ receipt });
       const tx2 = await contract.vote(Number(params.id));
-      const receipt2 = tx2.wait();
+      const receipt2 = await tx2.wait();
       console.log({ receipt2 });
     } catch (e) {
       console.error("Error fetching vote data:", e);
@@ -59,7 +56,7 @@ const Page: FC = () => {
       setLoading(false);
       toast({
         title: "Successfully Voted",
-        status: "error",
+        status: "success",
         duration: 4000,
         isClosable: true,
       });
@@ -103,7 +100,7 @@ const Page: FC = () => {
   };
   useEffect(() => {
     const accountGetter = async () => {
-      if (!provider) return;
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const rewardContract = new ethers.Contract(
         config.REVIEW_REWARD,
@@ -121,12 +118,11 @@ const Page: FC = () => {
       setTokenContract(bsmContract);
     };
     accountGetter();
-  }, [provider]);
+  }, []);
 
   useEffect(() => {
     if (!contract) return;
     console.log("onVoted 가 한번도 안불리는지 확인");
-    console.log("below onpublish");
     const onVoted = async (
       writerAddress: string,
       serial_number: string,
