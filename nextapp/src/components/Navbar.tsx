@@ -113,7 +113,7 @@ const DesktopNav = () => {
   const linkColor = useColorModeValue("gray.600", "gray.200");
   const linkHoverColor = useColorModeValue("gray.800", "white");
   const popoverContentBgColor = useColorModeValue("white", "gray.800");
-
+  const { account } = useAccount();
   return (
     <Stack direction={"row"} spacing={4}>
       {NAV_ITEMS.map((navItem) => (
@@ -155,6 +155,28 @@ const DesktopNav = () => {
           </Popover>
         </Flex>
       ))}
+      {account && (
+        <Flex key={"mypage"} justifyContent={"center"} width={90}>
+          <Popover trigger={"hover"} placement={"bottom-start"}>
+            <PopoverTrigger>
+              <Box
+                as="a"
+                p={2}
+                href={"/mypage"}
+                fontSize={"sm"}
+                fontWeight={"/mypage" == pathname ? 600 : 500}
+                color={"/mypage " == pathname ? "gray.900" : linkColor}
+                _hover={{
+                  textDecoration: "none",
+                  color: linkHoverColor,
+                }}
+              >
+                My Page
+              </Box>
+            </PopoverTrigger>
+          </Popover>
+        </Flex>
+      )}
     </Stack>
   );
 };
@@ -222,16 +244,8 @@ const NAV_ITEMS: Array<NavItem> = [
     href: "/attendance",
   },
   {
-    label: "Reviews",
-    href: "/reviews",
-  },
-  {
     label: "Selections",
     href: "/selections",
-  },
-  {
-    label: "My Page",
-    href: "/mypage",
   },
 ];
 
