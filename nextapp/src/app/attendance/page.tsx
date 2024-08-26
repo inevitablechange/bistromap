@@ -113,6 +113,7 @@ const Page: React.FC = () => {
       if (!account) return;
       setLoading(true);
       if (Array.isArray(attendanceData) && attendanceData.length == 0) {
+        // @ts-ignore
         const { data, error } = await supabase.from("attendance").insert([
           {
             id: account,
@@ -141,7 +142,7 @@ const Page: React.FC = () => {
         console.log("Attendance record updated:", data);
       }
     } catch (e) {
-      console.error("Error checking attendance:", e.message);
+      console.error("Error checking attendance:", e);
     } finally {
       setLoading(false);
     }
