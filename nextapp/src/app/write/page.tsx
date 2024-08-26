@@ -24,6 +24,7 @@ import RewardABI from "@/abi/Reward.json";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 import { useRouter } from "next/navigation";
+import { dummyData } from "@/constants/data";
 
 interface ReviewData {
   user_address: string; // 이더리움 주소, 42자짜리 문자열
@@ -41,6 +42,7 @@ const Edit: FC = () => {
   const [contract, setContract] = useState<any>(null);
   const [content, setContent] = useState<string>("");
   const [length, setLength] = useState<number>(0);
+  const [getDummyDataOn, setGetDummyDataOn] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [account, setAccount] = useState<string>("");
@@ -73,6 +75,7 @@ const Edit: FC = () => {
     };
     accountGetter();
   }, [provider]);
+
   const handleLocationSelect = (location: string) => {
     setSelectedLocation(location);
     setIsMapOpen(false); // 선택 후 구글 맵 닫기
@@ -115,6 +118,21 @@ const Edit: FC = () => {
       router.push("/");
     }
   };
+
+  const getDummyData = (values: any) => {
+    const obj = {
+      user_address: account,
+      serial_number: Math.floor(Math.random() * 201),
+      title: values.title,
+      content: values.content,
+      published_at: new Date(),
+      restaurant: values.place,
+      longitude: values.location.lng,
+      latitude: values.location.lat,
+      votes: Math.floor(Math.random() * 201),
+    };
+    console.log("dummydata::", obj);
+  };
   async function onSubmit(values: any) {
     try {
       if (!contract) {
@@ -125,6 +143,9 @@ const Edit: FC = () => {
       values.content = content;
 
       storeEthereumAddress(account!);
+      if (getDummyDataOn) {
+        return getDummyData(values);
+      }
 
       const lng = Math.floor(values.location.lng * Math.pow(10, 6));
       const lat = Math.floor(values.location.lat * Math.pow(10, 6));
@@ -194,6 +215,18 @@ const Edit: FC = () => {
         <Button onClick={upload}>Trigger Event</Button>
         <FormProvider {...methods}>
           <Flex width={"full"}>
+            <Button
+              onClick={() => {
+                setGetDummyDataOn((prev) => !prev);
+              }}
+            >
+              {!getDummyDataOn
+                ? "DUMMY DATA 받기"
+                : "실제로 이더리움에 제출하기"}
+            </Button>
+            <Text>
+              {getDummyDataOn ? "제출을 누르면 더미데이터를 받아옵니다." : ""}
+            </Text>
             <form
               action=""
               onSubmit={handleSubmit(onSubmit)}
