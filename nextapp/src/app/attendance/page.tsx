@@ -4,10 +4,11 @@ import React, { useState, useEffect } from "react";
 import Calendar, { TileArgs } from "react-calendar";
 import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
+import config from "@/constants/config";
 import "react-calendar/dist/Calendar.css";
 import { useAccount } from "@/context/AccountContext";
-import { rewardContractAddress } from "@/constants";
-import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import LoaderModal from "@/components/LoaderModal";
+import { Box, Button, Flex, Heading, Text, useToast } from "@chakra-ui/react";
 import "./calendar.css";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import { FaCheck } from "react-icons/fa";
@@ -21,14 +22,15 @@ interface AttendancObject {
 const Page: React.FC = () => {
   const [account, setAccount] = useState<string>("");
   const [attendanceObject, setAttendanceObject] = useState<AttendancObject>({});
+  const toast = useToast();
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
 
   const {
     provider,
+    signer,
   }: { provider: BrowserProvider | null; signer: Signer | null } = useAccount();
 
   async function fetchUserAttendance() {
@@ -57,24 +59,90 @@ const Page: React.FC = () => {
   }
   useEffect(() => {
     const accountGetter = async () => {
-      if (!provider) return;
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const acc = await signer.getAddress();
-      setAccount(acc);
       const rewardContract = new ethers.Contract(
-        rewardContractAddress,
+        config.REVIEW_REWARD,
         RewardABI,
         signer
       );
+
       setRewardContract(rewardContract);
     };
     accountGetter();
   }, []);
 
   useEffect(() => {
-    fetchUserAttendance();
+    function listenToEvent() {
+      const rewardContract = new ethers.Contract(
+        config.REVIEW_REWARD,
+        RewardABI,
+        signer
+      );
+      setRewardContract(rewardContract);
+      rewardContract.on("AttendanceMarked", onAttendanceMarked);
+    }
+    listenToEvent();
+    () => {
+      rewardContract.off("AttendanceMarked", onAttendanceMarked);
+      return;
+    };
   }, []);
 
+  useEffect(() => {
+    if (!account) return;
+    const getAttendance = async () => {
+      const { data, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("id", account)
+        .maybeSingle();
+      if (data && data.attendance_dates) {
+        const ret = makeAttendanceData(data.attendance_dates);
+        setAttendanceData(ret);
+      }
+      if (error) {
+        console.error(error);
+      }
+    };
+    getAttendance();
+  }, [account]);
+  const uploadToSupabase = async () => {
+    try {
+      if (account) {
+        setLoading(true);
+        try {
+          const userAttendance = await rewardContract.getUserAttendance();
+          const timestamps = userAttendance.dates.map(
+            (date: BigInt) => Number(date) * 1000
+          );
+          const dateArr: string[] = timestamps.map((ts: Date) => new Date(ts));
+          const { data, error } = await supabase.from("attendance").insert([
+            {
+              id: account,
+              attendance_dates: dateArr,
+            },
+          ]);
+          if (data) {
+            console.log("success::", data);
+          }
+          if (error) throw error;
+        } catch (error: any) {
+          toast({
+            title: "Oops! There was an error",
+            description: error.message,
+            status: "error",
+            duration: 7000,
+            isClosable: true,
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
   const formatDate = (date: Date) => {
     const d = new Date(date);
     const year = d.getFullYear();
@@ -92,32 +160,56 @@ const Page: React.FC = () => {
     } else {
       return null;
     }
+    return obj;
   }
+  const tileContent = ({ date }: { date: Date }) => {
+    if (attendanceData[formatDate(date)]) {
+      if (formatDate(new Date()) === formatDate(date)) {
+        setTimeout(() => {
+          setHasMarkedToday(true);
+        }, 0);
+      }
+      return <FaCheck color="green" fontSize={24} />;
+    } else {
+      return null;
+    }
+  };
   const handleAttendanceCheck = async () => {
+    console.log("handleAttendanceCheck");
+
     if (account) {
       setLoading(true);
-      setMessage(null);
       try {
-        rewardContract.markAttendance();
-      } catch (error) {
+        const tx = await rewardContract.markAttendance();
+        const receipt = await tx.wait();
+        console.log({ receipt });
+      } catch (error: any) {
+        toast({
+          title: "Oops! There was an error",
+          description: error.message,
+          status: "error",
+          duration: 7000,
+          isClosable: true,
+        });
       } finally {
         setLoading(false);
       }
     }
   };
-  const sendSupabase = async () => {
-    await onAttendanceMarked();
-  };
-  const onAttendanceMarked = async () => {
+
+  const onAttendanceMarked = async (userAddress: string, timestamp: BigInt) => {
     try {
-      if (!account) return;
+      console.log("handler called", userAddress, timestamp);
       setLoading(true);
-      if (Array.isArray(attendanceData) && attendanceData.length == 0) {
+      if (
+        Array.isArray(attendanceData.attendance_dates) &&
+        attendanceData.attendance_dates.length == 0
+      ) {
         // @ts-ignore
         const { data, error } = await supabase.from("attendance").insert([
           {
             id: account,
-            attendance_dates: [new Date()],
+            attendance_dates: [new Date(Number(timestamp) * 1000)],
           },
         ]);
 
@@ -125,16 +217,18 @@ const Page: React.FC = () => {
           throw error;
         }
         console.log("New attendance record created:", data);
-      } else if (Array.isArray(attendanceData) && attendanceData.length > 0) {
+      } else if (
+        Array.isArray(attendanceData.attendance_dates) &&
+        attendanceData.attendance_dates.length > 0
+      ) {
         const updatedAttendanceDates = [
-          ...attendanceData,
-          new Date().toISOString(),
+          ...attendanceData.attendance_dates,
+          new Date(),
         ];
-        console.log("updated");
         const { data, error } = await supabase
           .from("attendance")
           .update({ attendance_dates: updatedAttendanceDates })
-          .eq("id", account);
+          .eq("id", userAddress);
 
         if (error) {
           throw error;
@@ -148,14 +242,9 @@ const Page: React.FC = () => {
     }
   };
   useEffect(() => {
-    if (!rewardContract || !account) return;
-    rewardContract.on("AttendanceMarked", onAttendanceMarked);
-
     // Clean up the event listener when the component unmounts or dependencies change
-    return () => {
-      rewardContract.off("AttendanceMarked", onAttendanceMarked);
-    };
-  }, [rewardContract]);
+    return () => {};
+  }, []);
 
   return (
     <Box w="full">
@@ -169,6 +258,7 @@ const Page: React.FC = () => {
             backgroundSize={"cover"}
           ></Box>
           <Box pt={10} pl={4}>
+            <Button onClick={uploadToSupabase}>Upload Attendance</Button>
             <Heading
               style={{
                 WebkitBackgroundClip: "text",
@@ -240,9 +330,9 @@ const Page: React.FC = () => {
               ? "Checked-in for Today!"
               : "Mark Attendance"}
           </Button>
-          {message && <p>{message}</p>}
         </Flex>
       </section>
+      <LoaderModal isOpen={loading} setIsModalOpen={setLoading} />
     </Box>
   );
 };
