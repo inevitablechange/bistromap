@@ -29,7 +29,6 @@ const Edit: FC = () => {
   const [contract, setContract] = useState<any>(null);
   const [content, setContent] = useState<string>("");
   const [length, setLength] = useState<number>(0);
-  const [getDummyDataOn, setGetDummyDataOn] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [account, setAccount] = useState<string>("");
@@ -63,20 +62,7 @@ const Edit: FC = () => {
     setSelectedLocation(location);
     setIsMapOpen(false); // 선택 후 구글 맵 닫기
   };
-  const getDummyData = (values: any) => {
-    const obj = {
-      user_address: account,
-      serial_number: Math.floor(Math.random() * 201),
-      title: values.title,
-      content: values.content,
-      published_at: new Date(),
-      restaurant: values.place,
-      longitude: values.location.lng,
-      latitude: values.location.lat,
-      votes: Math.floor(Math.random() * 201),
-    };
-    console.log("dummydata::", obj);
-  };
+
   async function onSubmit(values: any) {
     try {
       if (!contract) {
@@ -87,9 +73,6 @@ const Edit: FC = () => {
       values.content = content;
 
       storeEthereumAddress(account!);
-      if (getDummyDataOn) {
-        return getDummyData(values);
-      }
 
       const lng = Math.floor(values.location.lng * Math.pow(10, 6));
       const lat = Math.floor(values.location.lat * Math.pow(10, 6));
@@ -113,12 +96,23 @@ const Edit: FC = () => {
         // Fetch review details from contract
         const review = await contract.getReview(serial_number);
         const decodedContent = Buffer.from(review.content, "base64").toString(); // Decode base64 to HTML content
+        if (!account) return;
+
+        // find user id
+        const {
+          data: { id },
+        }: { data: any; error: any } = await supabase
+          .from("users")
+          .select("*")
+          .eq("user_address", account)
+          .single();
+        if (!id) throw new Error("no user id");
 
         // Save to Supabase
         // @ts-ignore
         const { error } = await supabase.from("publications").insert([
           {
-            user_address: review.writer,
+            user_id: id,
             serial_number: parseInt(serial_number),
             title: review.title,
             content: decodedContent,
@@ -167,18 +161,6 @@ const Edit: FC = () => {
       <Box width={"1024px"} marginX="auto">
         <FormProvider {...methods}>
           <Flex width={"full"}>
-            <Button
-              onClick={() => {
-                setGetDummyDataOn((prev) => !prev);
-              }}
-            >
-              {!getDummyDataOn
-                ? "DUMMY DATA 받기"
-                : "실제로 이더리움에 제출하기"}
-            </Button>
-            <Text>
-              {getDummyDataOn ? "제출을 누르면 더미데이터를 받아옵니다." : ""}
-            </Text>
             <form
               action=""
               onSubmit={handleSubmit(onSubmit)}
