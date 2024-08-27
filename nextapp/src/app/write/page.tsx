@@ -3,6 +3,7 @@
 import { IoLocation } from "react-icons/io5";
 import supabase from "@/lib/supabaseClient";
 import { storeEthereumAddress } from "@/utils/ethereumAddressHandler";
+import { useRouter } from "next/navigation";
 
 import {
   Box,
@@ -23,7 +24,6 @@ import { useAccount } from "@/context/AccountContext";
 import RewardABI from "@/abi/Reward.json";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
-import { useRouter } from "next/navigation";
 
 const Edit: FC = () => {
   const [contract, setContract] = useState<any>(null);
