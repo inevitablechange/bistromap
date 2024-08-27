@@ -12,6 +12,7 @@ import TokenABI from "@/abi/BsmToken.json";
 
 import { Contract, ethers } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
+import { storeEthereumAddress } from "@/utils/ethereumAddressHandler";
 const VOTE_COST = 3 * Math.pow(10, 18);
 
 const Page: FC = () => {
@@ -21,12 +22,18 @@ const Page: FC = () => {
   const [address, setAddress] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [num, setNum] = useState<number>(1);
-
+  const {
+    account,
+  }: {
+    account: string | null;
+  } = useAccount();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const params = useParams();
 
   const toast = useToast();
   const handleVote = async () => {
+    if (!account) return;
+    storeEthereumAddress(account);
     if (!contract || !tokenContract) {
       console.log("contract object is not set");
       return;
