@@ -4,12 +4,14 @@ import React, { useState, useEffect } from "react";
 import Calendar, { TileArgs } from "react-calendar";
 import supabase from "../../lib/supabaseClient";
 import RewardABI from "@/abi/Reward.json";
+import { formatDate } from "@/utils/formatter";
 import config from "@/constants/config";
 import "react-calendar/dist/Calendar.css";
 import { useAccount } from "@/context/AccountContext";
 import LoaderModal from "@/components/LoaderModal";
 import { Box, Button, Flex, Heading, Text, useToast } from "@chakra-ui/react";
 import "./calendar.css";
+import dayjs from "dayjs";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import { FaCheck } from "react-icons/fa";
 interface AttendanceData {
@@ -19,19 +21,34 @@ interface AttendancObject {
   [key: string]: number;
 }
 
+interface SupabaseData {
+  id: string;
+  attendance_dates: string[] | null;
+}
+
 const Page: React.FC = () => {
-  const [account, setAccount] = useState<string>("");
   const [attendanceObject, setAttendanceObject] = useState<AttendancObject>({});
   const toast = useToast();
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
-
+  const [supabaseData, setSupabaseData] = useState<SupabaseData>({
+    id: "",
+    attendance_dates: [],
+  });
   const {
+    account,
     provider,
     signer,
-  }: { provider: BrowserProvider | null; signer: Signer | null } = useAccount();
+  }: {
+    account: string | null;
+    provider: BrowserProvider | null;
+    signer: Signer | null;
+  } = useAccount();
+
+  var now = dayjs(1724673816000).format();
+  console.log(now);
 
   async function fetchUserAttendance() {
     if (!account || !rewardContract) return;
@@ -39,8 +56,8 @@ const Page: React.FC = () => {
       console.log("fetch");
       // 스마트 계약과 상호작용하여 데이터 가져오기
       const data = await rewardContract.getUserAttendance();
-      const dateArray = data.dates.map((el: BigInt) =>
-        new Date(parseInt(el.toString()) * 1000).toISOString()
+      const dateArray = data.dates.map(
+        (el: BigInt) => dayjs(Number(el) * 1000).format
       );
       setAttendanceData(dateArray);
       const makeAttendanceObject = (attendanceDates: string[]) => {
@@ -57,6 +74,15 @@ const Page: React.FC = () => {
       console.error("Error fetching attendance:", error);
     }
   }
+  const makeAttendanceData = (attendanceDates: string[]) => {
+    const obj: AttendanceData = {};
+    for (let date of attendanceDates) {
+      const key: string = formatDate(new Date(date));
+      obj[key] = 1;
+    }
+    return obj;
+  };
+
   useEffect(() => {
     const accountGetter = async () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -81,23 +107,24 @@ const Page: React.FC = () => {
     };
   }, [rewardContract]);
 
+  const getAttendance = async (account: string) => {
+    const { data, error } = await supabase
+      .from("attendance")
+      .select("*")
+      .eq("id", account)
+      .maybeSingle();
+    if (data && data.attendance_dates) {
+      setSupabaseData(data);
+      const ret = makeAttendanceData(data.attendance_dates);
+      setAttendanceObject(ret);
+    }
+    if (error) {
+      console.error(error);
+    }
+  };
   useEffect(() => {
     if (!account) return;
-    const getAttendance = async () => {
-      const { data, error } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("id", account)
-        .maybeSingle();
-      if (data && data.attendance_dates) {
-        const ret = makeAttendanceData(data.attendance_dates);
-        setAttendanceData(ret);
-      }
-      if (error) {
-        console.error(error);
-      }
-    };
-    getAttendance();
+    getAttendance(account);
   }, [account]);
 
   const uploadToSupabase = async () => {
@@ -114,13 +141,25 @@ const Page: React.FC = () => {
           const timestamps = userAttendance.dates.map(
             (date: BigInt) => Number(date) * 1000
           );
-          const dateArr: string[] = timestamps.map((ts: Date) => new Date(ts));
-          const { data, error } = await supabase.from("attendance").insert([
-            {
-              id: account,
-              attendance_dates: dateArr,
-            },
-          ]);
+          const dateArr: string[] = timestamps.map((ts: Date) =>
+            dayjs(ts).format()
+          );
+          // const { data, error } = await supabase.from("attendance").insert([
+          //   {
+          //     id: account,
+          //     attendance_dates: dateArr,
+          //   },
+          // ]);
+          if (!Array.isArray(supabaseData.attendance_dates))
+            throw new Error("There is discrepancy in data");
+          const updatedAttendanceDates = [
+            ...supabaseData.attendance_dates,
+            dayjs(timestamps[timestamps.length - 1]).format(),
+          ];
+          const { data, error } = await supabase
+            .from("attendance")
+            .update({ attendance_dates: updatedAttendanceDates })
+            .eq("id", account);
           if (data) {
             console.log("success::", data);
           }
@@ -142,19 +181,19 @@ const Page: React.FC = () => {
     }
   };
 
-  const formatDate = (date: Date) => {
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0"); // getMonth()는 0부터 시작하므로 +1 필요
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
   function tileRender(content: TileArgs) {
+    let lastDay = null;
+    if (supabaseData.attendance_dates) {
+      lastDay =
+        supabaseData.attendance_dates[supabaseData.attendance_dates.length - 1];
+    }
+    // attendance object에 있는
+    // console.log("content::", dayjs(content.date).isSame(dayjs(), "day"));
     if (attendanceObject[formatDate(content.date)]) {
-      setTimeout(() => {
-        setHasMarkedToday(true);
-      }, 0);
+      if (dayjs(lastDay).isSame(dayjs(), "day"))
+        setTimeout(() => {
+          setHasMarkedToday(true);
+        }, 0);
       return <FaCheck color="green" fontSize={24} />;
     } else {
       return null;
@@ -199,15 +238,12 @@ const Page: React.FC = () => {
       });
       new Date(Number(timestamp) * 1000);
       setLoading(true);
-      if (
-        Array.isArray(attendanceData.attendance_dates) &&
-        attendanceData.attendance_dates.length == 0
-      ) {
+      if (Object.keys(attendanceObject).length === 0) {
         // @ts-ignore
         const { data, error } = await supabase.from("attendance").insert([
           {
-            id: account,
-            attendance_dates: [new Date(Number(timestamp) * 1000)],
+            id: userAddress,
+            attendance_dates: [dayjs(Number(timestamp) * 1000).format],
           },
         ]);
 
@@ -215,13 +251,12 @@ const Page: React.FC = () => {
           throw error;
         }
         console.log("New attendance record created:", data);
-      } else if (
-        Array.isArray(attendanceData.attendance_dates) &&
-        attendanceData.attendance_dates.length > 0
-      ) {
+      } else {
+        if (!Array.isArray(supabaseData.attendance_dates))
+          throw new Error("There is discrepancy in data");
         const updatedAttendanceDates = [
-          ...attendanceData.attendance_dates,
-          new Date(),
+          ...supabaseData.attendance_dates,
+          dayjs(Number(timestamp) * 1000).format(),
         ];
         const { data, error } = await supabase
           .from("attendance")
@@ -237,18 +272,11 @@ const Page: React.FC = () => {
       console.error("Error checking attendance:", e);
     } finally {
       setLoading(false);
+      console.log({ userAddress });
+      console.log({ account });
+      getAttendance(userAddress);
     }
   };
-
-  useEffect(() => {
-    const rewardContract = new ethers.Contract(
-      config.REVIEW_REWARD,
-      RewardABI,
-      signer
-    );
-
-    setRewardContract(rewardContract);
-  }, [signer]);
 
   useEffect(() => {
     if (!rewardContract) return;
@@ -286,7 +314,6 @@ const Page: React.FC = () => {
             >
               Daily Check-in Event
             </Heading>
-            <Button onClick={sendSupabase}>attendance mark</Button>
             <Box mt={10}>
               <Text fontSize={"x-large"} color={"gray.800"} mt={4}>
                 Receive 0.1 BSM for checking in each day.
