@@ -39,11 +39,9 @@ const Page: React.FC = () => {
   });
   const {
     account,
-    provider,
     signer,
   }: {
     account: string | null;
-    provider: BrowserProvider | null;
     signer: Signer | null;
   } = useAccount();
 
@@ -52,6 +50,7 @@ const Page: React.FC = () => {
     setHasMarkedToday(false);
     setSupabaseData({ id: "", attendance_dates: [] });
   }, [account]);
+
   async function fetchUserAttendance() {
     if (!account || !rewardContract) return;
     try {
@@ -147,58 +146,59 @@ const Page: React.FC = () => {
   const uploadToSupabase = async () => {
     try {
       if (!account) return;
-      const { data: existingUsers, error: fetchError } = await supabase
+      setLoading(true);
+      const {
+        data: { id },
+      }: { data: any; error: any } = await supabase
         .from("users")
         .select("*")
-        .eq("user_address", account);
-      if (account) {
-        setLoading(true);
-        try {
-          const contact = new ethers.Contract(
-            config.REVIEW_REWARD,
-            RewardABI,
-            signer
-          );
-          const userAttendance = await contact.getUserAttendance();
-          const timestamps = userAttendance.dates.map(
-            (date: BigInt) => Number(date) * 1000
-          );
-          const dateArr: string[] = timestamps.map((ts: Date) =>
-            dayjs(ts).format()
-          );
-          // const { data, error } = await supabase.from("attendance").insert([
-          //   {
-          //     id: account,
-          //     attendance_dates: dateArr,
-          //   },
-          // ]);
-          if (!Array.isArray(supabaseData.attendance_dates))
-            throw new Error("There is discrepancy in data");
-          const updatedAttendanceDates = [
-            ...supabaseData.attendance_dates,
-            dayjs(timestamps[timestamps.length - 1]).format(),
-          ];
+        .eq("user_address", account)
+        .single();
+      if (!id) throw new Error("no user id");
+      try {
+        const contact = new ethers.Contract(
+          config.REVIEW_REWARD,
+          RewardABI,
+          signer
+        );
+        const userAttendance = await contact.getUserAttendance();
+        const timestamps = userAttendance.dates.map(
+          (date: BigInt) => Number(date) * 1000
+        );
+        const dateArr: string[] = timestamps.map((ts: Date) =>
+          dayjs(ts).format()
+        );
+        const { data: attendanceRow } = await supabase
+          .from("attendance")
+          .select("*")
+          .eq("user_id", id)
+          .single();
+        console.log({ attendanceRow });
+        if (attendanceRow?.attendance_dates) {
           const { data } = await supabase
             .from("attendance")
             .update({
-              attendance_dates: updatedAttendanceDates,
+              attendance_dates: dateArr,
             })
-            .eq("id", userAddress);
-
-          if (data) {
-            console.log("success::", data);
-          }
-        } catch (error: any) {
-          toast({
-            title: "Oops! There was an error",
-            description: error.message,
-            status: "error",
-            duration: 7000,
-            isClosable: true,
+            .eq("id", account);
+          console.log({ data });
+        } else {
+          const { data } = await supabase.from("attendance").insert({
+            user_id: id,
+            attendance_dates: dateArr,
           });
-        } finally {
-          setLoading(false);
+          console.log({ data });
         }
+      } catch (error: any) {
+        toast({
+          title: "Oops! There was an error",
+          description: error.message,
+          status: "error",
+          duration: 7000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
       }
     } catch (e) {
       console.error(e);
@@ -321,19 +321,27 @@ const Page: React.FC = () => {
             ],
           })
           .eq("id", account);
+        const ret = makeAttendanceData([
+          ...attendanceRow?.attendance_dates,
+          dayjs(Number(timestamp) * 1000).format(),
+        ]);
+        setAttendanceObject(ret);
         console.log({ data });
       } else {
         const { data } = await supabase.from("attendance").insert({
           user_id: userData.id,
           attendance_dates: [dayjs(Number(timestamp) * 1000).format()],
         });
+        const ret = makeAttendanceData([
+          dayjs(Number(timestamp) * 1000).format(),
+        ]);
+        setAttendanceObject(ret);
         console.log({ data });
       }
     } catch (e) {
       console.error("Error checking attendance:", e);
     } finally {
       setLoading(false);
-      getAttendance(account);
     }
   };
 
