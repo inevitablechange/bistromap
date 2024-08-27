@@ -13,32 +13,25 @@ export type Database = {
         Row: {
           attendance_dates: string[] | null
           id: string
-          user_address: string | null
+          user_id: string | null
         }
         Insert: {
           attendance_dates?: string[] | null
-          id: string
-          user_address?: string | null
+          id?: string
+          user_id?: string | null
         }
         Update: {
           attendance_dates?: string[] | null
           id?: string
-          user_address?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "attendance_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["address"]
-          },
-          {
-            foreignKeyName: "attendance_user_address_fkey"
-            columns: ["user_address"]
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["address"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -54,7 +47,7 @@ export type Database = {
           restaurant: string | null
           serial_number: number | null
           title: string | null
-          user_address: string
+          user_id: string | null
           votes: number | null
         }
         Insert: {
@@ -68,7 +61,7 @@ export type Database = {
           restaurant?: string | null
           serial_number?: number | null
           title?: string | null
-          user_address: string
+          user_id?: string | null
           votes?: number | null
         }
         Update: {
@@ -82,31 +75,34 @@ export type Database = {
           restaurant?: string | null
           serial_number?: number | null
           title?: string | null
-          user_address?: string
+          user_id?: string | null
           votes?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "publications_user_address_fkey"
-            columns: ["user_address"]
+            foreignKeyName: "publications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["address"]
+            referencedColumns: ["id"]
           },
         ]
       }
       users: {
         Row: {
-          address: string
-          created_at: string | null
+          created_at: string
+          id: string
+          user_address: string | null
         }
         Insert: {
-          address: string
-          created_at?: string | null
+          created_at?: string
+          id?: string
+          user_address?: string | null
         }
         Update: {
-          address?: string
-          created_at?: string | null
+          created_at?: string
+          id?: string
+          user_address?: string | null
         }
         Relationships: []
       }
