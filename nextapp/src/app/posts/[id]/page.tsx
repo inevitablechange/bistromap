@@ -10,7 +10,7 @@ import config from "@/constants/config";
 import RewardABI from "@/abi/Reward.json";
 import TokenABI from "@/abi/BsmToken.json";
 
-import { BrowserProvider, Contract, ethers, Signer } from "ethers";
+import { Contract, ethers } from "ethers";
 import LoaderModal from "@/components/LoaderModal";
 const VOTE_COST = 3 * Math.pow(10, 18);
 

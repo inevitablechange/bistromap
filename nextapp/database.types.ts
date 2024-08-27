@@ -12,17 +12,14 @@ export type Database = {
       attendance: {
         Row: {
           attendance_dates: string[] | null
-          consecutiveDays: number[]
           id: string
         }
         Insert: {
           attendance_dates?: string[] | null
-          consecutiveDays: number[]
           id: string
         }
         Update: {
           attendance_dates?: string[] | null
-          consecutiveDays?: number[]
           id?: string
         }
         Relationships: [
@@ -39,6 +36,7 @@ export type Database = {
         Row: {
           content: string | null
           created_at: string | null
+          elected: boolean | null
           id: string
           latitude: number
           longitude: number
@@ -46,12 +44,13 @@ export type Database = {
           restaurant: string | null
           serial_number: number | null
           title: string | null
-          user_address: string | null
+          user_address: string
           votes: number | null
         }
         Insert: {
           content?: string | null
           created_at?: string | null
+          elected?: boolean | null
           id?: string
           latitude: number
           longitude: number
@@ -59,12 +58,13 @@ export type Database = {
           restaurant?: string | null
           serial_number?: number | null
           title?: string | null
-          user_address?: string | null
+          user_address: string
           votes?: number | null
         }
         Update: {
           content?: string | null
           created_at?: string | null
+          elected?: boolean | null
           id?: string
           latitude?: number
           longitude?: number
@@ -72,7 +72,7 @@ export type Database = {
           restaurant?: string | null
           serial_number?: number | null
           title?: string | null
-          user_address?: string | null
+          user_address?: string
           votes?: number | null
         }
         Relationships: [
