@@ -7,6 +7,7 @@ import "@/styles/globals.css"; // 전역 스타일
 import OwnerCheckModal from "@/components/OwnerCheckModal";
 import { useState } from "react";
 import RestaurantCardList from "@/components/RestaurantCardList";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   const pathname = usePathname(); // 현재 경로를 가져옵니다
@@ -71,6 +72,7 @@ export default function Home() {
       </section>
       <Box h="200px" bgGradient="linear(to-r, yellow.200, pink.500)"></Box>
       <OwnerCheckModal isOpen={isModalOpen} />
+      <Footer />
     </Box>
   );
 }

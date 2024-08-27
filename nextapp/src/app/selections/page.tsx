@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Box, Container, Grid, Heading, Text, Flex } from "@chakra-ui/react";
-import RestaurantCard from "../../components/RestaurantCard";
+import { Box, Container, Grid, Heading, Flex } from "@chakra-ui/react";
+import RestaurantCard from "@/components/RestaurantCard";
 import supabase from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
@@ -73,7 +73,7 @@ const SelectionPage: React.FC = () => {
         </Heading>
       </Flex>
 
-      <Container maxW="1440px" mt={10}>
+      <Container maxW="1440px" mt={10} mb={"88px"}>
         <Grid templateColumns="repeat(3, 1fr)" gap={8}>
           {cards.map((card: Publication) => (
             <RestaurantCard
