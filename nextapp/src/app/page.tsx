@@ -10,7 +10,6 @@ import RestaurantCardList from "@/components/RestaurantCardList";
 
 export default function Home() {
   const pathname = usePathname(); // 현재 경로를 가져옵니다
-  const showBanner = pathname !== "/mint";
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   return (

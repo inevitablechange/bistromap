@@ -64,40 +64,40 @@ const Page: FC = () => {
     }
   };
 
-  const getReviewAndUpload = async () => {
-    if (!provider) return;
-    const rewardContract = new ethers.Contract(
-      config.REVIEW_REWARD,
-      RewardABI,
-      signer
-    );
-    console.log({ rewardContract });
-    const review = await rewardContract.getReview(num);
-    const decodedContent = Buffer.from(review.content, "base64").toString();
-    const { error } = await supabase.from("publications").insert([
-      {
-        user_address: review.writer,
-        serial_number: num,
-        title: review.title,
-        content: decodedContent,
-        published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
-        restaurant: review.restaurant,
-        longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
-        latitude: parseInt(review.latitude) / Math.pow(10, 6),
-        votes: 0,
-      },
-    ]);
-    if (error) {
-      toast({
-        title: "Oops! There was an error",
-        description: error.message,
-        status: "error",
-        duration: 7000,
-        isClosable: true,
-      });
-      console.log(error);
-    }
-  };
+  // const getReviewAndUpload = async () => { // dev 에서만
+  //   if (!provider) return;
+  //   const rewardContract = new ethers.Contract(
+  //     config.REVIEW_REWARD,
+  //     RewardABI,
+  //     signer
+  //   );
+  //   console.log({ rewardContract });
+  //   const review = await rewardContract.getReview(num);
+  //   const decodedContent = Buffer.from(review.content, "base64").toString();
+  //   const { error } = await supabase.from("publications").insert([
+  //     {
+  //       user_address: review.writer,
+  //       serial_number: num,
+  //       title: review.title,
+  //       content: decodedContent,
+  //       published_at: new Date(parseInt(review.publishedAt) * 1000), // Convert Unix timestamp to JavaScript Date
+  //       restaurant: review.restaurant,
+  //       longitude: parseInt(review.longitude) / Math.pow(10, 6), // Convert back to original decimal values
+  //       latitude: parseInt(review.latitude) / Math.pow(10, 6),
+  //       votes: 0,
+  //     },
+  //   ]);
+  //   if (error) {
+  //     toast({
+  //       title: "Oops! There was an error",
+  //       description: error.message,
+  //       status: "error",
+  //       duration: 7000,
+  //       isClosable: true,
+  //     });
+  //     console.log(error);
+  //   }
+  // };
   useEffect(() => {
     const accountGetter = async () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -200,7 +200,7 @@ const Page: FC = () => {
             value={num}
             onChange={(e) => setNum(Number(e.target.value))}
           />
-          <Button onClick={getReviewAndUpload}>getReviewAndUpload</Button>
+          {/* <Button onClick={getReviewAndUpload}>getReviewAndUpload</Button> */}
         </Flex>
         <Flex
           width={"full"}
