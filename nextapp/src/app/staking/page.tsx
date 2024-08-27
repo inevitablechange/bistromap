@@ -18,8 +18,7 @@ import config from "@/constants/config";
 export default function BSMstake() {
   const { signer } = useAccount();
 
-  const [activeComponent, setActiveComponent] =
-    useState<string>("lpTokenStake");
+  const [activeComponent, setActiveComponent] = useState<string>("Stake");
   const [balance, setBalance] = useState<BigNumberish>(BigInt(0));
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [bsmContract, setBsmContract] = useState<Contract | null>(null);
@@ -200,15 +199,6 @@ export default function BSMstake() {
       <Flex gap={4} justifyContent={"center"} minW={"full"}>
         <Button
           bgColor={
-            activeComponent === "lpTokenStake" ? "yellow.400" : "gray.100"
-          }
-          onClick={() => setActiveComponent("lpTokenStake")}
-          flex={1}
-        >
-          Stake lpBSM Token
-        </Button>
-        <Button
-          bgColor={
             activeComponent === "lpTokenStake" ? "gray.100" : "yellow.400"
           }
           onClick={() => setActiveComponent("Stake")}
@@ -216,8 +206,28 @@ export default function BSMstake() {
         >
           Stake BSM Token
         </Button>
+        <Button
+          bgColor={
+            activeComponent === "lpTokenStake" ? "yellow.400" : "gray.100"
+          }
+          onClick={() => setActiveComponent("lpTokenStake")}
+          flex={1}
+        >
+          Stake lpBSM Token
+        </Button>
       </Flex>
-      {activeComponent === "lpTokenStake" ? (
+      {activeComponent === "Stake" ? (
+        <Staking
+          stakingContract={stakingContract}
+          bsmContract={bsmContract}
+          fetchBalances={fetchBalances}
+          fetchStakedInfo={fetchStakedInfo}
+          canUnstake={canUnstake}
+          balance={balance}
+          stakedAmount={stakedAmount}
+          reward={reward}
+        />
+      ) : (
         <LpTokenStaking
           signer={signer}
           lpTokenStakingContract={lpTokenStakingContract}
@@ -229,17 +239,6 @@ export default function BSMstake() {
           lpTokenBalance={lpTokenBalance}
           lpTokenStakedAmount={lpTokenStakedAmount}
           lpTokenReward={lpTokenReward}
-        />
-      ) : (
-        <Staking
-          stakingContract={stakingContract}
-          bsmContract={bsmContract}
-          fetchBalances={fetchBalances}
-          fetchStakedInfo={fetchStakedInfo}
-          canUnstake={canUnstake}
-          balance={balance}
-          stakedAmount={stakedAmount}
-          reward={reward}
         />
       )}
     </Flex>
