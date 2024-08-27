@@ -14,6 +14,7 @@ import "./calendar.css";
 import dayjs from "dayjs";
 import { BrowserProvider, ethers, Signer } from "ethers";
 import { FaCheck } from "react-icons/fa";
+import { storeEthereumAddress } from "@/utils/ethereumAddressHandler";
 interface AttendanceData {
   [key: string]: number;
 }
@@ -29,7 +30,6 @@ interface SupabaseData {
 const Page: React.FC = () => {
   const [attendanceObject, setAttendanceObject] = useState<AttendancObject>({});
   const toast = useToast();
-  const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
   const [rewardContract, setRewardContract] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [hasMarkedToday, setHasMarkedToday] = useState<boolean>(false);
@@ -47,9 +47,11 @@ const Page: React.FC = () => {
     signer: Signer | null;
   } = useAccount();
 
-  var now = dayjs(1724673816000).format();
-  console.log(now);
-
+  useEffect(() => {
+    setAttendanceObject({});
+    setHasMarkedToday(false);
+    setSupabaseData({ id: "", attendance_dates: [] });
+  }, [account]);
   async function fetchUserAttendance() {
     if (!account || !rewardContract) return;
     try {
@@ -59,7 +61,6 @@ const Page: React.FC = () => {
       const dateArray = data.dates.map(
         (el: BigInt) => dayjs(Number(el) * 1000).format
       );
-      setAttendanceData(dateArray);
       const makeAttendanceObject = (attendanceDates: string[]) => {
         const obj: AttendanceData = {};
         for (let date of attendanceDates) {
@@ -108,11 +109,27 @@ const Page: React.FC = () => {
   }, [rewardContract]);
 
   const getAttendance = async (account: string) => {
+    // 먼저, 해당 유저의 정보가 유저 테이블에 있는지 확인한다
+
+    // 유저 정보가 테이블에 있다면 userId를 가지고 attendance 정보를 가져온다.
+
+    // 유저 정보가 테이블에 없다면 그냥 둔다.
     const { data, error } = await supabase
       .from("attendance")
-      .select("*")
-      .eq("id", account)
+      .select(
+        `
+        id,
+        attendance_dates,
+        user_id,
+        users!inner (
+          user_address
+        )
+      `
+      )
+      .eq("users.user_address", account)
       .maybeSingle();
+
+    console.log("supabase::", data);
     if (data && data.attendance_dates) {
       setSupabaseData(data);
       const ret = makeAttendanceData(data.attendance_dates);
@@ -129,6 +146,11 @@ const Page: React.FC = () => {
 
   const uploadToSupabase = async () => {
     try {
+      if (!account) return;
+      const { data: existingUsers, error: fetchError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_address", account);
       if (account) {
         setLoading(true);
         try {
@@ -156,14 +178,16 @@ const Page: React.FC = () => {
             ...supabaseData.attendance_dates,
             dayjs(timestamps[timestamps.length - 1]).format(),
           ];
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("attendance")
-            .update({ attendance_dates: updatedAttendanceDates })
-            .eq("id", account);
+            .update({
+              attendance_dates: updatedAttendanceDates,
+            })
+            .eq("id", userAddress);
+
           if (data) {
             console.log("success::", data);
           }
-          if (error) throw error;
         } catch (error: any) {
           toast({
             title: "Oops! There was an error",
@@ -202,6 +226,7 @@ const Page: React.FC = () => {
 
   const handleAttendanceCheck = async () => {
     console.log("handleAttendanceCheck");
+    storeEthereumAddress(account!);
 
     if (account) {
       setLoading(true);
@@ -229,52 +254,86 @@ const Page: React.FC = () => {
     }
   };
 
-  const onAttendanceMarked = async (userAddress: string, timestamp: BigInt) => {
+  const TS = BigInt(1724764740);
+  const userAddress = "0x74fe20bA35fcFb8E072013C64D3c169485364806";
+  const triggerSupabase = async () => {
+    // return;
     try {
-      console.log("handler called", userAddress, timestamp);
-      setAttendanceData((prev) => {
-        prev[new Date(Number(timestamp) * 1000).toString()] = 1;
-        return prev;
+      if (!account) return;
+      const {
+        data: { id },
+        error,
+      }: { data: any; error: any } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_address", account)
+        .single();
+      if (!id) throw new Error("no user id");
+      const { data } = await supabase.from("attendance").insert({
+        user_id: id,
+        attendance_dates: [dayjs(Number(TS) * 1000).format()],
       });
-      new Date(Number(timestamp) * 1000);
+      console.log({ data });
+    } catch (e) {
+      console.log("e", e);
+    }
+  };
+  const callSupa = async () => {
+    if (!account) return;
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("user_address", account)
+      .single();
+    console.log("supa::", data);
+  };
+  const onAttendanceMarked = async (_: string, timestamp: BigInt) => {
+    if (!account) return;
+    try {
+      console.log("onAttendanceMarked called");
       setLoading(true);
-      if (Object.keys(attendanceObject).length === 0) {
-        // @ts-ignore
-        const { data, error } = await supabase.from("attendance").insert([
-          {
-            id: userAddress,
-            attendance_dates: [dayjs(Number(timestamp) * 1000).format],
-          },
-        ]);
 
-        if (error) {
-          throw error;
-        }
-        console.log("New attendance record created:", data);
-      } else {
-        if (!Array.isArray(supabaseData.attendance_dates))
-          throw new Error("There is discrepancy in data");
-        const updatedAttendanceDates = [
-          ...supabaseData.attendance_dates,
-          dayjs(Number(timestamp) * 1000).format(),
-        ];
-        const { data, error } = await supabase
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_address", account)
+        .single();
+
+      if (!userData) throw new Error("no user id");
+
+      if (error) {
+        throw error;
+      }
+      // 유저의 attendance 데이터 조회
+      const { data: attendanceRow } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("user_id", userData.id)
+        .single();
+      console.log({ attendanceRow });
+      if (attendanceRow?.attendance_dates) {
+        const { data } = await supabase
           .from("attendance")
-          .update({ attendance_dates: updatedAttendanceDates })
-          .eq("id", userAddress);
-
-        if (error) {
-          throw error;
-        }
-        console.log("Attendance record updated:", data);
+          .update({
+            attendance_dates: [
+              ...attendanceRow?.attendance_dates,
+              dayjs(Number(timestamp) * 1000).format(),
+            ],
+          })
+          .eq("id", account);
+        console.log({ data });
+      } else {
+        const { data } = await supabase.from("attendance").insert({
+          user_id: userData.id,
+          attendance_dates: [dayjs(Number(timestamp) * 1000).format()],
+        });
+        console.log({ data });
       }
     } catch (e) {
       console.error("Error checking attendance:", e);
     } finally {
       setLoading(false);
-      console.log({ userAddress });
-      console.log({ account });
-      getAttendance(userAddress);
+      getAttendance(account);
     }
   };
 
@@ -301,6 +360,7 @@ const Page: React.FC = () => {
           ></Box>
           <Box pt={10} pl={4}>
             <Button onClick={uploadToSupabase}>Upload Attendance</Button>
+            <Button onClick={triggerSupabase}>Upload One Attendance</Button>
             <Heading
               style={{
                 WebkitBackgroundClip: "text",
@@ -314,6 +374,7 @@ const Page: React.FC = () => {
             >
               Daily Check-in Event
             </Heading>
+            <Button onClick={callSupa}>supa DUPAA</Button>
             <Box mt={10}>
               <Text fontSize={"x-large"} color={"gray.800"} mt={4}>
                 Receive 0.1 BSM for checking in each day.
