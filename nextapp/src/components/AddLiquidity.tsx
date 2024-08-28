@@ -25,10 +25,10 @@ interface AddLiquidityProps {
   bsmContract: Contract | null;
   usdtContract: Contract | null;
   routerContract: Contract | null;
-  pairContract: Contract | null;
   bsmBalance: BigNumberish;
   usdtBalance: BigNumberish;
   lpBalance: BigNumberish;
+  getBalances: () => Promise<void>;
 }
 
 const AddLiquidity: FC<AddLiquidityProps> = ({
@@ -37,10 +37,10 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
   bsmContract,
   usdtContract,
   routerContract,
-  pairContract,
   bsmBalance,
   usdtBalance,
   lpBalance,
+  getBalances,
 }) => {
   const [inputAmount, setInputAmount] = useState<string>("");
   const [outputAmount, setOutputAmount] = useState<string>("");
@@ -133,7 +133,6 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
         }
 
         setStatus("Approving USDT spend...");
-
         const usdtAllowance = await usdtContract?.allowance(
           account,
           config.UNISWAP_V2_ROUTER
@@ -146,6 +145,7 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
           );
           await approveTx.wait();
         }
+
         setStatus("Adding Liquidity to BSM-USDT Pool...");
         const tx = await routerContract?.addLiquidity(
           bsmContract,
@@ -157,6 +157,7 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
           account,
           deadline
         );
+
         setStatus("Waiting for transaction confirmation...");
         await tx.wait();
       } else {
@@ -203,6 +204,7 @@ const AddLiquidity: FC<AddLiquidityProps> = ({
         await tx.wait();
       }
       setStatus("Add Liquidity successful!");
+      getBalances();
       setIsLoading(false);
     } catch (error) {
       console.error("Add Liquidity failed:", error);

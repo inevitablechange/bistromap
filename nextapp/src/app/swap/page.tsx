@@ -27,6 +27,22 @@ const SwapPage: NextPage = () => {
   const [usdtBalance, setUsdtBalance] = useState<BigNumberish>(BigInt(0));
   const [lpBalance, setLpBalance] = useState<BigNumberish>(BigInt(0));
 
+  const getBalances = async () => {
+    if (!signer || !bsmContract || !usdtContract || !pairContract) return;
+
+    try {
+      const bsmBal = await bsmContract.balanceOf(signer.address);
+      const usdtBal = await usdtContract.balanceOf(signer.address);
+      const lpBal = await pairContract.balanceOf(signer.address);
+
+      setBsmBalance(bsmBal);
+      setUsdtBalance(usdtBal);
+      setLpBalance(lpBal);
+    } catch (error) {
+      console.error("Fail getting balances of tokens");
+    }
+  };
+
   useEffect(() => {
     if (!signer) return;
 
@@ -48,22 +64,8 @@ const SwapPage: NextPage = () => {
   useEffect(() => {
     if (!signer || !bsmContract || !usdtContract || !pairContract) return;
 
-    const getBalances = async () => {
-      try {
-        const bsmBal = await bsmContract.balanceOf(signer.address);
-        const usdtBal = await usdtContract.balanceOf(signer.address);
-        const lpBal = await pairContract.balanceOf(signer.address);
-
-        setBsmBalance(bsmBal);
-        setUsdtBalance(usdtBal);
-        setLpBalance(lpBal);
-      } catch (error) {
-        console.error("Fail getting balances of tokens");
-      }
-    };
-
     getBalances();
-  }, [signer, bsmContract, usdtContract]);
+  }, [signer, bsmContract, usdtContract, pairContract]);
 
   return (
     <Flex flexDir={"column"} padding={"20"} minWidth={"800px"} align={"center"}>
@@ -93,6 +95,7 @@ const SwapPage: NextPage = () => {
           routerContract={routerContract}
           bsmBalance={bsmBalance}
           usdtBalance={usdtBalance}
+          getBalances={getBalances}
         />
       ) : (
         <AddLiquidity
@@ -102,10 +105,10 @@ const SwapPage: NextPage = () => {
           bsmContract={bsmContract}
           usdtContract={usdtContract}
           routerContract={routerContract}
-          pairContract={pairContract}
           bsmBalance={bsmBalance}
           usdtBalance={usdtBalance}
           lpBalance={lpBalance}
+          getBalances={getBalances}
         />
       )}
     </Flex>

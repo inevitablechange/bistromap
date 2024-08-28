@@ -30,6 +30,7 @@ interface SwapProps {
   routerContract: Contract | null;
   bsmBalance: BigNumberish;
   usdtBalance: BigNumberish;
+  getBalances: () => Promise<void>;
 }
 
 const Swap: FC<SwapProps> = ({
@@ -41,6 +42,7 @@ const Swap: FC<SwapProps> = ({
   routerContract,
   bsmBalance,
   usdtBalance,
+  getBalances,
 }) => {
   const [inputAmount, setInputAmount] = useState<string>("");
   const [outputAmount, setOutputAmount] = useState<string>("");
@@ -142,6 +144,7 @@ const Swap: FC<SwapProps> = ({
         await tx.wait();
       }
       setStatus("Swap successful!");
+      getBalances();
       setIsLoading(false);
     } catch (error) {
       console.error("Swap failed:", error);
