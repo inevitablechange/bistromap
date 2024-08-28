@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./BsmToken.sol";
 
-contract StakingContract {
+contract StakingContract_TEST {
     BSM public BSMToken;
     
     uint256 public constant MINIMUM_STAKE = 1000 * 1e18; // 1000 BSM
