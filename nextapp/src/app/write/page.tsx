@@ -138,6 +138,7 @@ const Edit: FC = () => {
       } finally {
         toast({
           title: "Success",
+          status: "success",
           duration: 4000,
           isClosable: true,
         });
