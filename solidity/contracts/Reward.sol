@@ -5,6 +5,8 @@ import "./BsmToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./utils/DateChecker.sol";
 import "./Staking.sol"; // 스테이킹 컨트랙트 import
+import "hardhat/console.sol";
+
 
 interface IStakingContract {
     struct Stake {
@@ -35,7 +37,6 @@ contract Reward {
         string restaurant; // 레스토랑 이름
         int32 longitude; // 경도
         int32 latitude; // 위도
-        bool expired; // 집계가 끝났는지 여부
         bool elected; // top review로 선정되었는지 여부 
     }
 
@@ -50,6 +51,7 @@ contract Reward {
     uint public lastReviewNumbers;
     uint public reviewNumbers;
     uint public lastRewardAt;
+    address owner;
 
     event Published(address indexed user, uint256 reviewNumber);
     event Voted(address indexed user, uint256 reviewNumber, uint votes);
@@ -59,7 +61,7 @@ contract Reward {
         bistroToken = BSM(_bistroTokenAddress);
         stakingContract = IStakingContract(_stakingContractAddress);
         dateChecker = DateChecker(_dateCheckerContractAddress);
-        lastRewardAt = block.timestamp;
+        owner = msg.sender;
     }
 
     fallback() external {}
@@ -67,7 +69,7 @@ contract Reward {
 
     // 내림차순 정렬 및 상위 5개 중 투표 10개 이상 받은 리뷰만 반환.
     function sort(Review[] memory arr) public view returns(Review[] memory){
-        uint minimumVotes = 10;
+        // uint minimumVotes = 10;
         if (arr.length == 0) {
            return arr;
         } else {
@@ -78,17 +80,9 @@ contract Reward {
                     }
                 }
             }
-            // find index;
-            uint leng;
-            for (uint i = 0; i < arr.length; i++) {
-                if (arr[i].votes >= minimumVotes) {
-                    leng++;
-                } else {
-                    break;
-                }
-            }
-            Review[] memory topReviews = new Review[](leng);
-            for (uint i = 0; i < leng; i++) {
+
+            Review[] memory topReviews = new Review[](REWARDS_FOR);
+            for (uint i = 0; i < REWARDS_FOR; i++) {
                 topReviews[i] = arr[i];
                 topReviews[i].elected = true;
             }
@@ -96,61 +90,51 @@ contract Reward {
         }
     }
 
-    function claimVoterReward(uint serialNumber) public {
-        Review storage review = reviews[serialNumber];
-        require(review.expired, "Review rewards not yet calculated");
+    function mintReward() public {
+        require(msg.sender == owner, "Only the owner can mint rewards");
+        require(block.timestamp >= lastRewardAt + 4 weeks, "Minting can only occur every 4 weeks");
 
-        // Check if the sender voted for the review
-        bool votedFor = false;
-        for (uint i = 0; i < review.votedBy.length; i++) {
-            if (review.votedBy[i] == msg.sender) {
-                votedFor = true;
-                break;
-            }
-        }
-        require(votedFor, "Only voters of the selected review can claim reward");
-
-        uint votersToReward = review.votedBy.length;
-        require(votersToReward > 0, "No voters to reward");
-
-        uint rewardPerVoter = address(this).balance / votersToReward; // Total rewards divided by number of voters
-
-        // Transfer the reward to the voter
-        payable(msg.sender).transfer(rewardPerVoter);
+        // Mint 30,000 BSM tokens for rewards (6,000BSM for each writer)
+        bistroToken.mint(address(this), 30000 * BSM_DECIMALS);
     }
 
     function reward() public {
-        require(block.timestamp >= lastRewardAt + 4 weeks, "can be done in 4 weeks fron last reward"); // 마지막 집계 이후 4주가 지나야함
+        require(block.timestamp >= lastRewardAt + 4 weeks, "can be done in 4 weeks from last reward"); // 마지막 집계 이후 4주가 지나야함
         uint newReviewCount = reviewNumbers - lastReviewNumbers;
+        
+        uint votesTotal = 0;
         Review[] memory collectedReviews = new Review[](newReviewCount);
+        // Collect Reviews that have been written for the past 4 weeks
         for (uint i = 0; i < newReviewCount; i++) {
-            reviews[lastReviewNumbers + i].expired = true;
-            collectedReviews[i] = reviews[lastReviewNumbers + i];
+            collectedReviews[i] = reviews[lastReviewNumbers + i + 1];
+            votesTotal += reviews[lastReviewNumbers + i + 1].votes;
         }
+
+        // Get top 5 reviews that has more than 10 votes
         Review[] memory topReviews = sort(collectedReviews);
         require(topReviews.length > 0, "No reviews");
 
+        // Iterate through the top reviews and get number of voters to give rewards
         uint votersToReward = 0;
-    
-        // Iterate through the top reviews and mark them as expired
-        for (uint i = 0; i < topReviews.length && i < REWARDS_FOR; i++) {
-            topReviews[i].expired = true; // Mark review as expired (processed)
-            
+        for (uint i = 0; i < topReviews.length; i++) {            
             votersToReward += topReviews[i].votedBy.length;
-            
-            // Do not mint tokens now, wait for writer to claim using `claimReward()`
         }
-        // Split the rewards among voters of all selected reviews
-        uint rewardPerVoter = address(this).balance / votersToReward;
 
-        // Transfer rewards to each voter
-        for (uint i = 0; i < topReviews.length && i < REWARDS_FOR; i++) {
+        // Split the rewards among voters of all selected reviews
+        uint rewardPerVoter = votesTotal * 3 * BSM_DECIMALS / votersToReward;
+
+        for (uint i = 0; i < topReviews.length; i++) {
+            // Transfer rewards to top review writers - 리뷰당 6,000 BSM
+            address writer = topReviews[i].writer;
+            bistroToken.transfer(writer, 6000 * BSM_DECIMALS);
+
+            // Transfer rewards to each voter - votes로 쌓인 보상 나눠갖기
             for (uint j = 0; j < topReviews[i].votedBy.length; j++) {
                 address voter = topReviews[i].votedBy[j];
-                payable(voter).transfer(rewardPerVoter); // Send the calculated reward to each voter
+
+                bistroToken.transfer(voter, rewardPerVoter);
             }
         }
-
         // Update the last reward date
         lastRewardAt = block.timestamp;
         lastReviewNumbers = reviewNumbers;
@@ -189,8 +173,7 @@ contract Reward {
         uint publishedAt,
         string memory restaurant,
         int32 longitude,
-        int32 latitude,
-        bool expired
+        int32 latitude
     ) {
         Review storage review = reviews[serialNumber];
         return (
@@ -202,8 +185,7 @@ contract Reward {
             review.publishedAt,
             review.restaurant,
             review.longitude,
-            review.latitude,
-            review.expired
+            review.latitude
         );
     }
 
@@ -211,7 +193,7 @@ contract Reward {
         return userAttendance[msg.sender];
     }
 
-      function markAttendance() public {
+    function markAttendance() public {
         Attendance storage attendance = userAttendance[msg.sender];
         uint[] storage calendar = attendance.dates;
 
