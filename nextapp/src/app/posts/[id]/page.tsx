@@ -129,29 +129,57 @@ const Page: FC = () => {
 
   useEffect(() => {
     if (!contract) return;
-    console.log("onVoted 가 한번도 안불리는지 확인");
-    const onVoted = async (
-      writerAddress: string,
-      serial_number: string,
-      votes: BigInt
-    ) => {
+    const onVoted = async (_: string, serial_number: BigInt, votes: BigInt) => {
       try {
+        if (!account) return;
         console.log("Voted event detected:");
         setLoading(true);
-
-        const { error } = await supabase
+        const { data: publicationData, error: fetchError } = await supabase
           .from("publications")
-          .update({ votes: parseInt(votes.toString()) })
-          .eq("user_address", writerAddress);
-        if (error) {
+          .select(
+            `
+            id,
+            serial_number,
+            users!inner (
+              user_address
+            )
+          `
+          )
+          .eq("serial_number", Number(serial_number).toString())
+          .single();
+        if (fetchError) {
+          console.error("Error fetching publication:", fetchError);
           toast({
             title: "Oops! There was an error",
-            description: error.message,
+            description: fetchError.message,
             status: "error",
             duration: 7000,
             isClosable: true,
           });
-          console.log(error);
+          return;
+        }
+        if (!publicationData) {
+          console.error("No publication found for this user_address");
+          return;
+        }
+
+        // 2. 찾은 publication 업데이트
+        const { error: updateError } = await supabase
+          .from("publications")
+          .update({ votes: Number(votes) })
+          .eq("id", publicationData.id);
+
+        if (updateError) {
+          console.error("Error updating publication:", updateError);
+          toast({
+            title: "Oops! There was an error",
+            description: updateError.message,
+            status: "error",
+            duration: 7000,
+            isClosable: true,
+          });
+        } else {
+          console.log("Publication updated successfully");
         }
       } catch (e) {
         console.log(e);
@@ -186,10 +214,16 @@ const Page: FC = () => {
       // Supabase에서 데이터 가져오기
       const { data: fetchedData, error } = await supabase
         .from("publications")
-        .select("*")
+        .select(
+          `
+          *,
+          users!inner (
+            user_address
+          )
+        `
+        )
         .eq("serial_number", params.id)
         .single();
-
       setData(fetchedData);
     };
 
@@ -216,8 +250,11 @@ const Page: FC = () => {
           marginBottom={14}
         >
           <Button style={{ borderRadius: 50 }} bgColor="mint">
-            {`${data.user_address?.slice(0, 4)}...${data.user_address?.slice(
-              data.user_address.length - 4
+            {`${data.users.user_address?.slice(
+              0,
+              4
+            )}...${data.users.user_address?.slice(
+              data.users.user_address.length - 4
             )}`}
           </Button>
           <Button
