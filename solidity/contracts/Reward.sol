@@ -14,6 +14,7 @@ interface IStakingContract {
         uint256 timestamp;
         uint256 lastClaimTimestamp;
     }
+
     function getStakeDetails(address staker) external view returns (Stake memory);
 }
 
@@ -26,6 +27,7 @@ contract Reward {
         uint[] dates;
         uint8 consecutive;
     }
+    
     struct Review {
         address writer; // 글쓴이
         string title; // 제목
@@ -40,7 +42,7 @@ contract Reward {
         bool elected; // top review로 선정되었는지 여부 
     }
 
-   mapping(uint => Review) public reviews;
+    mapping(uint => Review) public reviews;
     mapping(address => Attendance) public userAttendance;
     mapping(address => uint[]) public userVotedFor;
 
@@ -56,6 +58,7 @@ contract Reward {
     event Published(address indexed user, uint256 reviewNumber);
     event Voted(address indexed user, uint256 reviewNumber, uint votes);
     event AttendanceMarked(address indexed user, uint256 timestamp);
+    event Rewarded(address[] indexed writers, uint[] topReviews);
 
     constructor(address _bistroTokenAddress, address _stakingContractAddress, address _dateCheckerContractAddress) {
         bistroToken = BSM(_bistroTokenAddress);
@@ -67,12 +70,13 @@ contract Reward {
     fallback() external {}
     receive() external payable {}
 
-    // 내림차순 정렬 및 상위 5개 중 투표 10개 이상 받은 리뷰만 반환.
+    // 내림차순 정렬 및 상위 5개 리뷰만 반환. (투표 10개 이상 받은 리뷰에 대한 기준은 테스트 후 추가)
     function sort(Review[] memory arr) public view returns(Review[] memory){
         // uint minimumVotes = 10;
         if (arr.length == 0) {
            return arr;
         } else {
+
             for (uint i = lastReviewNumbers; i < reviewNumbers; i++) {
                 for (uint j = i + 1; j < arr.length; j++) {
                     if (arr[i].votes < arr[j].votes) {
@@ -135,6 +139,7 @@ contract Reward {
                 bistroToken.transfer(voter, rewardPerVoter);
             }
         }
+
         // Update the last reward date
         lastRewardAt = block.timestamp;
         lastReviewNumbers = reviewNumbers;
@@ -163,32 +168,8 @@ contract Reward {
 
     function getReviewsWrittenBySender() public view returns(Review[] memory) {
         return reviewsPerAccount[msg.sender];
-    } 
-    function getReview(uint serialNumber) public view returns (
-        address writer,
-        string memory title,
-        string memory content,
-        uint votes,
-        address[] memory votedBy,
-        uint publishedAt,
-        string memory restaurant,
-        int32 longitude,
-        int32 latitude
-    ) {
-        Review storage review = reviews[serialNumber];
-        return (
-            review.writer,
-            review.title,
-            review.content,
-            review.votes,
-            review.votedBy,
-            review.publishedAt,
-            review.restaurant,
-            review.longitude,
-            review.latitude
-        );
     }
-
+    
     function getUserAttendance() public view returns(Attendance memory) {
         return userAttendance[msg.sender];
     }

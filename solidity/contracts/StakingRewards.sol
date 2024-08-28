@@ -118,7 +118,6 @@ contract StakingContract_TEST {
     function updateRewards() public {
         _updateRewards();
     }
-
     
     function calculateAPY() public view returns (uint256) {
         if (totalStaked == 0) return MAX_APY;
@@ -162,5 +161,4 @@ contract StakingContract_TEST {
             staker.rewards += rewards;
         }
     }
-
 }
